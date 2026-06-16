@@ -1,13 +1,19 @@
 // Same-origin auth shim for neves.cloud/{repo} projects.
 //
-// Centralizes the GitHub OAuth popup flow on this origin (neves.cloud) so
-// every sibling project reads from one shared localStorage entry instead of
-// running its own popup. Storage shape matches pip-auth so this and pip-auth
-// can co-exist on the same page without conflict.
+// Centralizes GitHub auth on this origin (neves.cloud) so every sibling project
+// reads from one shared localStorage entry instead of running its own flow.
+// Storage shape matches pip-auth so this and pip-auth can co-exist on the same
+// page without conflict.
 //
-// - storage key:     '__neevs_auth'        (shape: { token, username, avatarUrl })
-// - channel:         '__neevs_auth_v1'     (cross-tab + cross-project notifications)
-// - callback origin: 'https://auth.neevs.io'  (where the GitHub OAuth app redirects)
+// Auth mechanism: GitHub OAuth **Device Flow** (same as ccw) — no redirect_uri,
+// no callback surface, no client secret, so GitHub's "redirect_uri not associated"
+// error class can't occur. GitHub's two device endpoints send no CORS headers,
+// so they route through the proxy.neevs.io CORS shim (a pure passthrough that
+// stores nothing); the token returns straight to this browser.
+//
+// - storage key:    '__neevs_auth'     (shape: { token, username, avatarUrl })
+// - channel:        '__neevs_auth_v1'  (cross-tab + cross-project notifications)
+// - device proxy:   'https://proxy.neevs.io'  (CORS shim for github.com/login/device/*)
 //
 // Consumers:
 //   import { getSession, requireSession, signIn, signOut, onChange } from '/auth/lib.js';
@@ -15,7 +21,7 @@
 const STORAGE_KEY = '__neevs_auth';
 const CHANNEL_NAME = '__neevs_auth_v1';
 const CLIENT_ID = 'Ov23li3dnFMUNHbu1SjZ';
-const CALLBACK_ORIGIN = 'https://auth.neevs.io';
+const PROXY_BASE = 'https://proxy.neevs.io';
 const GH_API = 'https://api.github.com';
 
 const channel = ('BroadcastChannel' in self) ? new BroadcastChannel(CHANNEL_NAME) : null;
@@ -46,61 +52,121 @@ export async function getSession({ verify = true } = {}) {
   }
 }
 
+// GitHub OAuth Device Flow (mirrors ccw/docs/device-auth.js). Contract is
+// unchanged from the old popup flow: resolves { token, username, avatarUrl } and
+// writes the shared session, or rejects with a human message on denial / timeout
+// / cancel — so existing `await signIn()` callers need no change. `app` is kept
+// for signature compat only (device flow carries no OAuth `state`).
 export async function signIn({ scope = 'read:user', extraScopes = [], app = '' } = {}) {
   const fullScope = [...scope.split(/\s+/).filter(Boolean), ...extraScopes].join(' ');
-  const url = new URL('https://github.com/login/oauth/authorize');
-  url.searchParams.set('client_id', CLIENT_ID);
-  url.searchParams.set('redirect_uri', CALLBACK_ORIGIN + '/');
-  url.searchParams.set('state', app ? `${crypto.randomUUID()}|${app}` : crypto.randomUUID());
-  url.searchParams.set('scope', fullScope);
 
-  const w = 500, h = 600;
-  const left = window.screenX + (window.innerWidth - w) / 2;
-  const top = window.screenY + (window.innerHeight - h) / 2;
-
-  return new Promise((resolve, reject) => {
-    const popup = window.open(
-      url.toString(), 'github-oauth',
-      `width=${w},height=${h},left=${left},top=${top},popup=yes`,
-    );
-    if (!popup) { reject(new Error('Popup blocked. Allow popups for this site.')); return; }
-
-    try { localStorage.removeItem('gh-auth-result'); } catch {}
-
-    const cleanup = () => {
-      clearInterval(poll);
-      window.removeEventListener('message', onMsg);
-    };
-    const settle = (auth) => {
-      cleanup();
-      if (!auth) { reject(new Error('Authentication failed')); return; }
-      const session = { token: auth.token, username: auth.login, avatarUrl: auth.avatar_url };
-      writeStored(session);
-      resolve(session);
-    };
-    const onMsg = (e) => {
-      if (e.origin !== CALLBACK_ORIGIN) return;
-      if (e.data?.type === 'gh-auth') settle(e.data.auth);
-    };
-    window.addEventListener('message', onMsg);
-
-    // Safari nullifies window.opener on cross-origin redirect, so the popup's
-    // postMessage doesn't reach us; auth.neevs.io also writes to
-    // localStorage['gh-auth-result'] as a fallback that we poll for here.
-    const poll = setInterval(() => {
-      try {
-        const stored = localStorage.getItem('gh-auth-result');
-        if (stored) {
-          localStorage.removeItem('gh-auth-result');
-          settle(JSON.parse(stored).auth);
-          return;
-        }
-        if (popup.closed) { cleanup(); reject(new Error('OAuth flow cancelled')); }
-      } catch {
-        cleanup(); reject(new Error('OAuth flow cancelled'));
-      }
-    }, 500);
+  // 1) Ask GitHub (via the CORS shim) for a device + user code.
+  const codeRes = await fetch(`${PROXY_BASE}/login/device/code`, {
+    method: 'POST',
+    headers: { Accept: 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ client_id: CLIENT_ID, scope: fullScope }),
   });
+  if (!codeRes.ok) throw new Error(`Device code request failed (${codeRes.status}).`);
+  const cd = await codeRes.json();
+  if (cd.error) throw new Error(cd.error_description || cd.error);
+
+  // 2) Show the code so the user can authorize on github.com.
+  let cancelled = false;
+  const modal = showDeviceModal({
+    userCode: cd.user_code,
+    verificationUri: cd.verification_uri || 'https://github.com/login/device',
+    verificationUriComplete: cd.verification_uri_complete,
+    onCancel: () => { cancelled = true; },
+  });
+
+  // 3) Poll for the token until the user authorizes or the code expires.
+  try {
+    let intervalMs = ((cd.interval || 5) + 1) * 1000;
+    const deadline = Date.now() + (cd.expires_in || 900) * 1000;
+    while (Date.now() < deadline) {
+      if (cancelled) throw new Error('Sign-in cancelled.');
+      await new Promise((r) => setTimeout(r, intervalMs));
+      if (cancelled) throw new Error('Sign-in cancelled.');
+
+      // A transient non-JSON / 5xx tick must not abort the poll — skip and retry
+      // until the deadline; only GitHub's explicit error codes terminate.
+      let data;
+      try {
+        const tr = await fetch(`${PROXY_BASE}/login/oauth/access_token`, {
+          method: 'POST',
+          headers: { Accept: 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            client_id: CLIENT_ID,
+            device_code: cd.device_code,
+            grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
+          }),
+        });
+        if (!tr.ok) continue;
+        data = await tr.json();
+      } catch { continue; }
+
+      if (data.access_token) {
+        const session = await sessionFromToken(data.access_token);
+        writeStored(session);
+        return session;
+      }
+      if (data.error === 'authorization_pending') continue;
+      if (data.error === 'slow_down') { intervalMs += 5000; continue; }
+      throw new Error(data.error_description || data.error || 'Device authorization failed.');
+    }
+    throw new Error('Sign-in timed out — the code expired.');
+  } finally {
+    modal.close();
+  }
+}
+
+// api.github.com sends CORS, so the identity read is direct (no proxy). Retry a
+// few times so a transient /user blip doesn't surface as a hard sign-in failure.
+async function sessionFromToken(token) {
+  let lastErr = null;
+  for (let i = 0; i < 3; i++) {
+    try {
+      const u = await fetch(`${GH_API}/user`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' },
+      });
+      if (u.ok) {
+        const me = await u.json();
+        return { token, username: me.login, avatarUrl: me.avatar_url };
+      }
+      lastErr = new Error('GitHub /user ' + u.status);
+    } catch (e) { lastErr = e; }
+    if (i < 2) await new Promise((r) => setTimeout(r, 500));
+  }
+  throw new Error('Signed in, but couldn’t read your GitHub profile — ' + (lastErr?.message || 'try again') + '.');
+}
+
+// Self-contained device-code modal — no external CSS, so the shim stays drop-in
+// for any consumer page. Returns { close }.
+function showDeviceModal({ userCode, verificationUri, verificationUriComplete, onCancel }) {
+  const verifyUrl = verificationUriComplete || verificationUri;
+  const root = document.createElement('div');
+  root.setAttribute('role', 'dialog');
+  root.setAttribute('aria-modal', 'true');
+  root.setAttribute('aria-label', 'Sign in to neves.cloud');
+  root.style.cssText = 'position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6);font-family:system-ui,-apple-system,sans-serif';
+  root.innerHTML = `
+    <div style="background:#0d1117;color:#e6edf3;border:1px solid #30363d;border-radius:12px;padding:28px;max-width:360px;width:90%;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,.5)">
+      <div style="font-size:15px;font-weight:600;margin-bottom:4px">Sign in to neves.cloud</div>
+      <div style="font-size:13px;color:#8b949e;margin-bottom:18px">Enter this code on GitHub to authorize.</div>
+      <div data-code style="font:600 26px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:3px;background:#161b22;border:1px solid #30363d;border-radius:8px;padding:14px;margin-bottom:18px;cursor:pointer" title="Click to copy">${userCode}</div>
+      <a data-open href="${verifyUrl}" target="_blank" rel="noopener" style="display:block;background:#238636;color:#fff;text-decoration:none;font-weight:600;font-size:14px;padding:11px;border-radius:8px;margin-bottom:10px">Open GitHub &amp; authorize</a>
+      <div data-status style="font-size:12px;color:#8b949e;min-height:16px">Waiting for authorization…</div>
+      <button data-cancel style="margin-top:12px;background:none;border:none;color:#8b949e;font-size:13px;cursor:pointer;text-decoration:underline">Cancel</button>
+    </div>`;
+  root.querySelector('[data-code]').addEventListener('click', () => {
+    navigator.clipboard?.writeText(userCode).then(() => {
+      root.querySelector('[data-status]').textContent = 'Code copied. Waiting for authorization…';
+    }).catch(() => {});
+  });
+  root.querySelector('[data-cancel]').addEventListener('click', () => onCancel?.());
+  root.addEventListener('click', (e) => { if (e.target === root) onCancel?.(); });
+  document.body.appendChild(root);
+  return { close: () => root.remove() };
 }
 
 export function signOut() {
