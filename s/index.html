@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1a1d20" media="(prefers-color-scheme: dark)">
+  <meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta http-equiv="Referrer-Policy" content="no-referrer">
+  <title>shared · neves.cloud</title>
+  <link rel="icon" type="image/svg+xml" href="../icon.svg">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      color-scheme: light dark;
+      --bg: #f5f5f7;
+      --surface: #ffffff;
+      --ink: #1d1d1f;
+      --ink-muted: #6e6e73;
+      --ink-faint: #9a9a9f;
+      --border-subtle: rgba(0,0,0,0.06);
+      --border-default: rgba(0,0,0,0.10);
+      --border-strong: rgba(0,0,0,0.18);
+      --accent: #006d51;
+      --accent-soft: rgba(0,109,81,0.08);
+      --danger: #c84e00;
+      --shadow: 0 1px 3px rgba(0,0,0,0.06);
+      --radius: 8px;
+      --ease: cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1a1d20;
+        --surface: #262a2e;
+        --ink: #e9ecef;
+        --ink-muted: #adb5bd;
+        --ink-faint: #6c757d;
+        --border-subtle: rgba(255,255,255,0.06);
+        --border-default: rgba(255,255,255,0.10);
+        --border-strong: rgba(255,255,255,0.18);
+        --accent: #66b288;
+        --accent-soft: rgba(102,178,136,0.10);
+        --danger: #e07b3c;
+      }
+    }
+
+    html, body { height: 100%; }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", ui-sans-serif, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow: hidden;
+    }
+
+    #frame {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+      border: none;
+      background: var(--bg);
+    }
+
+    .gate {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+      z-index: 9999;
+      animation: fade 0.25s var(--ease);
+    }
+    @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+
+    .gate-card {
+      background: var(--surface);
+      border: 1px solid var(--border-default);
+      border-radius: 12px;
+      padding: 32px 28px 24px;
+      max-width: 420px;
+      width: calc(100% - 32px);
+      box-shadow: var(--shadow);
+    }
+    .gate-eyebrow {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+    .gate-title {
+      font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Helvetica Neue", ui-sans-serif, sans-serif;
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      letter-spacing: -0.01em;
+      line-height: 1.2;
+    }
+    .gate-sub {
+      font-size: 13px;
+      color: var(--ink-muted);
+      margin-bottom: 20px;
+      line-height: 1.55;
+    }
+    .gate-input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border-default);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 13px;
+      font-family: ui-monospace, SFMono-Regular, monospace;
+      color: var(--ink);
+      transition: border-color 0.15s var(--ease);
+      outline: none;
+    }
+    .gate-input:focus { border-color: var(--accent); }
+    .gate-input::placeholder { color: var(--ink-faint); }
+    .gate-row { display: flex; gap: 8px; margin-top: 12px; }
+    .gate-btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: opacity 0.15s var(--ease);
+      flex-shrink: 0;
+    }
+    .gate-btn:hover { opacity: 0.88; }
+    .gate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .gate-msg {
+      font-size: 12px;
+      margin-top: 14px;
+      line-height: 1.5;
+      min-height: 18px;
+    }
+    .gate-msg.error { color: var(--danger); }
+    .gate-msg.muted { color: var(--ink-muted); font-family: ui-monospace, monospace; }
+    .gate-meta {
+      font-size: 10px;
+      color: var(--ink-faint);
+      margin-top: 22px;
+      font-family: ui-monospace, monospace;
+      letter-spacing: 0.04em;
+      text-align: center;
+    }
+
+    body[data-state="loading"] #frame,
+    body[data-state="entry"] #frame,
+    body[data-state="error"] #frame { display: none; }
+    body[data-state="loaded"] .gate { display: none; }
+  </style>
+</head>
+<body data-state="loading">
+
+<div class="gate" id="gate">
+  <div class="gate-card">
+    <div class="gate-eyebrow" id="eyebrow">Shared</div>
+    <div class="gate-title" id="title">Loading\u2026</div>
+    <div class="gate-sub" id="sub">Decrypting and rendering.</div>
+    <div id="form-row" hidden>
+      <input class="gate-input" id="code" type="text" placeholder="paste code here" autocomplete="off" spellcheck="false">
+      <div class="gate-row">
+        <button class="gate-btn" id="open">Open</button>
+      </div>
+    </div>
+    <div class="gate-msg muted" id="msg"></div>
+    <div class="gate-meta">neves.cloud</div>
+  </div>
+</div>
+
+<iframe id="frame" title="shared content"></iframe>
+
+<script type="module">
+'use strict';
+
+// ── base64url helpers ──────────────────────────────────────────────
+function b64urlDecode(s) {
+  const padded = s + '=='.slice(0, (4 - s.length % 4) % 4);
+  const std = padded.replace(/-/g, '+').replace(/_/g, '/');
+  const bin = atob(std);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+// ── UI helpers ─────────────────────────────────────────────────────
+const body     = document.body;
+const titleEl  = document.getElementById('title');
+const subEl    = document.getElementById('sub');
+const msgEl    = document.getElementById('msg');
+const formRow  = document.getElementById('form-row');
+const codeIn   = document.getElementById('code');
+const openBtn  = document.getElementById('open');
+const frame    = document.getElementById('frame');
+
+const setState = (s) => { body.dataset.state = s; };
+const showError = (title, detail) => {
+  setState('error');
+  titleEl.textContent = title;
+  subEl.textContent = detail || '';
+  msgEl.textContent = '';
+  formRow.hidden = true;
+};
+const showEntry = () => {
+  setState('entry');
+  titleEl.textContent = 'Enter share code';
+  subEl.textContent = 'Paste the full code from your share URL — the part after the # symbol.';
+  formRow.hidden = false;
+  msgEl.className = 'gate-msg muted';
+  msgEl.textContent = '';
+  setTimeout(() => codeIn.focus(), 60);
+};
+const showLoading = (txt) => {
+  setState('loading');
+  titleEl.textContent = 'Loading\u2026';
+  subEl.textContent = txt || 'Decrypting and rendering.';
+  formRow.hidden = true;
+  msgEl.textContent = '';
+};
+
+// ── Gist fetch + decrypt ───────────────────────────────────────────
+const GIST_USER = 'jonasneves';
+const PAYLOAD_FILE = 'payload.json';
+
+async function fetchPayload(gistId) {
+  // Cache-busting query so revocation (gist DELETE) takes effect on the next
+  // page load — without this, Fastly serves cached payload for ~minutes.
+  const url = `https://gist.githubusercontent.com/${GIST_USER}/${encodeURIComponent(gistId)}/raw/${PAYLOAD_FILE}?t=${Date.now()}`;
+  const res = await fetch(url, { cache: 'no-store' });
+  if (res.status === 404) throw new Error('NOT_FOUND');
+  if (!res.ok) throw new Error('FETCH_FAILED');
+  return res.json();
+}
+
+async function decryptPayload(payload, keyB64) {
+  if (payload.v !== 1) throw new Error('UNSUPPORTED_VERSION');
+  const keyBytes = b64urlDecode(keyB64);
+  const ivBytes  = b64urlDecode(payload.iv);
+  const ctBytes  = b64urlDecode(payload.ct);
+  const key = await crypto.subtle.importKey('raw', keyBytes, 'AES-GCM', false, ['decrypt']);
+  const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: ivBytes }, key, ctBytes);
+  return new TextDecoder().decode(plain);
+}
+
+// ── Hash bridging across iframe boundary ───────────────────────────
+// The parent fragment carries two things: artifact identity (`{gist}.{key}`)
+// and inner-page deep link (`#/m1`). Concatenated form: `#{gist}.{key}#/m1`.
+// The bridge keeps both in sync so deep links survive inner navigation
+// without losing the artifact identity.
+let bridging = false;
+let currentFrameWin = null;
+let currentArtifactPart = null;
+
+// Split a parent fragment into [artifactPart, innerHash].
+function splitParentFragment() {
+  const trimmed = location.hash.replace(/^#/, '');
+  const idx = trimmed.indexOf('#/');
+  if (idx === -1) return [trimmed, ''];
+  return [trimmed.slice(0, idx), '#' + trimmed.slice(idx + 1)];
+}
+
+// Parent → inner: registered once, references current iframe via closure var.
+window.addEventListener('hashchange', () => {
+  if (bridging) return;
+  if (!currentFrameWin || !currentArtifactPart) return;
+  const [artifactPart, innerHash] = splitParentFragment();
+  if (artifactPart !== currentArtifactPart) return; // different artifact — route() re-renders
+  try {
+    if (currentFrameWin.location.hash !== innerHash) {
+      bridging = true;
+      currentFrameWin.location.hash = innerHash;
+      bridging = false;
+    }
+  } catch {}
+});
+
+function installBridge(artifactPart, initialInnerHash) {
+  currentArtifactPart = artifactPart;
+  frame.addEventListener('load', () => {
+    const win = frame.contentWindow;
+    if (!win) return;
+    currentFrameWin = win;
+    try {
+      if (initialInnerHash && win.location.hash !== initialInnerHash) {
+        win.location.hash = initialInnerHash;
+      }
+    } catch {}
+    try {
+      win.addEventListener('hashchange', () => {
+        if (bridging) return;
+        const innerHash = win.location.hash || '';
+        const newParent = '#' + artifactPart + innerHash;
+        if (newParent !== location.hash) {
+          bridging = true;
+          history.replaceState(null, '', location.pathname + newParent);
+          bridging = false;
+        }
+      });
+    } catch {}
+  }, { once: true });
+}
+
+// ── Render ─────────────────────────────────────────────────────────
+async function render(gistId, keyB64, innerHash) {
+  showLoading('Fetching\u2026');
+  let payload;
+  try {
+    payload = await fetchPayload(gistId);
+  } catch (err) {
+    if (err.message === 'NOT_FOUND') {
+      showError('Share unavailable', 'This share has been revoked or never existed. Ask the sender for a new link.');
+    } else {
+      showError('Couldn\u2019t fetch the share', 'Network error or the storage is temporarily unreachable. Try again in a minute.');
+    }
+    return;
+  }
+
+  showLoading('Decrypting\u2026');
+  let html;
+  try {
+    html = await decryptPayload(payload, keyB64);
+  } catch {
+    showError('Couldn\u2019t decrypt', 'The key in the URL doesn\u2019t match this content. Re-check the link or ask the sender to resend.');
+    return;
+  }
+
+  installBridge(`${gistId}.${keyB64}`, innerHash);
+  // srcdoc documents inherit the parent's base URL, so a hash-only link
+  // like <a href="#/m1"> resolves to {parent_url}#/m1 and the click
+  // navigates the iframe AWAY from about:srcdoc — reloading the shell,
+  // which then sees no artifact in the hash and shows the code prompt.
+  // Pinning <base href="about:srcdoc"> keeps hash navigation in-frame.
+  const patched = /<head[^>]*>/i.test(html)
+    ? html.replace(/<head[^>]*>/i, (m) => m + '<base href="about:srcdoc">')
+    : '<base href="about:srcdoc">' + html;
+  frame.srcdoc = patched;
+  setState('loaded');
+}
+
+// ── Fragment parsing ───────────────────────────────────────────────
+// Two recognized shapes:
+//   #{gist_id}.{key}                  ← direct artifact link
+//   #{gist_id}.{key}#/inner-hash      ← artifact + deep link to inner page
+//   #                                  ← code entry prompt
+function parseFragment(raw) {
+  const trimmed = raw.replace(/^#/, '');
+  if (!trimmed) return { kind: 'entry' };
+  // Split off any nested inner-hash starting with /
+  const slashIdx = trimmed.indexOf('#/');
+  const head = slashIdx === -1 ? trimmed : trimmed.slice(0, slashIdx);
+  const innerHash = slashIdx === -1 ? '' : trimmed.slice(slashIdx + 1);
+  const dotIdx = head.indexOf('.');
+  if (dotIdx === -1) return { kind: 'entry', prefill: head };
+  const gistId = head.slice(0, dotIdx);
+  const key    = head.slice(dotIdx + 1);
+  if (!/^[0-9a-f]+$/i.test(gistId) || key.length < 30) {
+    return { kind: 'invalid' };
+  }
+  return { kind: 'artifact', gistId, key, innerHash: innerHash ? '#' + innerHash : '' };
+}
+
+// ── Bootstrap ──────────────────────────────────────────────────────
+let currentArtifact = null;
+
+function route() {
+  const r = parseFragment(location.hash);
+  if (r.kind === 'artifact') {
+    if (currentArtifact && currentArtifact.gistId === r.gistId && currentArtifact.key === r.key) {
+      // Same artifact — bridge handles inner-hash sync, no re-render needed.
+      return;
+    }
+    currentArtifact = { gistId: r.gistId, key: r.key };
+    render(r.gistId, r.key, r.innerHash);
+  } else if (r.kind === 'invalid') {
+    currentArtifact = null;
+    showError('Link looks broken', 'The share code in this URL is malformed. Double-check the link or ask the sender to resend.');
+  } else {
+    currentArtifact = null;
+    showEntry();
+    if (r.prefill) codeIn.value = r.prefill;
+  }
+}
+
+openBtn.addEventListener('click', () => {
+  const v = codeIn.value.trim().replace(/^#/, '');
+  if (!v) return;
+  location.hash = v;
+});
+codeIn.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); openBtn.click(); }
+});
+
+window.addEventListener('hashchange', route);
+route();
+</script>
+
+</body>
+</html>

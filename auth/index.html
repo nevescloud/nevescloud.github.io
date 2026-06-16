@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Sign in — neves.cloud</title>
+  <style>
+    :root {
+      --bg: #fafafa;
+      --ink: #1d1d1f;
+      --muted: #6e6e73;
+      --accent: #006d51;
+      --line: rgba(0,0,0,0.08);
+      --ease: cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+    html, body { margin: 0; padding: 0; background: var(--bg); color: var(--ink); }
+    body {
+      font: 14px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    }
+    .card {
+      max-width: 360px; width: calc(100% - 2rem);
+      padding: 2rem 1.75rem; border: 1px solid var(--line); border-radius: 12px;
+      background: #fff;
+    }
+    h1 {
+      font: 700 22px/1.1 -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif;
+      letter-spacing: -0.02em; margin: 0 0 0.5rem;
+    }
+    p { color: var(--muted); margin: 0 0 1.25rem; }
+    button {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      padding: 0.6rem 1rem; border: 0; border-radius: 8px;
+      background: var(--ink); color: #fff; font: inherit; font-weight: 500;
+      cursor: pointer; transition: background 0.2s var(--ease);
+    }
+    button:hover { background: var(--accent); }
+    button:disabled { background: var(--muted); cursor: default; }
+    .err { color: #c0392b; margin-top: 0.75rem; min-height: 1.2em; }
+    .foot { margin-top: 1.25rem; font-size: 12px; color: var(--muted); }
+    a { color: inherit; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1 id="title">Sign in</h1>
+    <p id="sub">Continue to <span id="dest">neves.cloud</span> with your GitHub account.</p>
+    <button id="signin">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      Continue with GitHub
+    </button>
+    <div class="err" id="err"></div>
+    <div class="foot">Session is shared across all <code>neves.cloud</code> projects.</div>
+  </main>
+
+  <script type="module">
+    import { getSession, signIn } from './lib.js';
+
+    // Only allow same-origin returnTo to prevent open-redirect abuse.
+    function safeReturnTo() {
+      const raw = new URLSearchParams(location.search).get('returnTo');
+      if (!raw) return '/';
+      try {
+        const u = new URL(raw, location.origin);
+        return u.origin === location.origin ? u.pathname + u.search + u.hash : '/';
+      } catch {
+        return '/';
+      }
+    }
+
+    const dest = safeReturnTo();
+    document.getElementById('dest').textContent = dest === '/' ? 'neves.cloud' : dest;
+
+    const btn = document.getElementById('signin');
+    const err = document.getElementById('err');
+
+    // Already signed in — bounce immediately.
+    (async () => {
+      const s = await getSession({ verify: false });
+      if (s?.token) location.replace(dest);
+    })();
+
+    btn.addEventListener('click', async () => {
+      err.textContent = '';
+      btn.disabled = true;
+      try {
+        await signIn();
+        location.replace(dest);
+      } catch (e) {
+        err.textContent = e.message || String(e);
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

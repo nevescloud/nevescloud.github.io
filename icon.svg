@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- neves.cloud app icon. Practices borrowed from ../{ccw,canvasflow,cuko}:
+       rounded square, a 135-degree diagonal-gradient ground for depth, one clean
+       centred glyph with generous padding, a top sheen, a hairline inner stroke.
+       Identity is the site's: a near-black ground (dark-theme bg #1a1d20 family)
+       carrying the brand green accent (#54a679, the dark-surface lift of #006d51)
+       as the N wordmark glyph. -->
+  <defs>
+    <linearGradient id="ground" x1="0" y1="0" x2="256" y2="256" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2a2e34"/>
+      <stop offset="1" stop-color="#141619"/>
+    </linearGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="256" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.10"/>
+      <stop offset="0.55" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="cast" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#000000" flood-opacity="0.34"/>
+    </filter>
+  </defs>
+
+  <rect width="256" height="256" rx="56" fill="url(#ground)"/>
+  <rect width="256" height="256" rx="56" fill="url(#sheen)"/>
+  <rect x="1.5" y="1.5" width="253" height="253" rx="54.5" fill="none" stroke="#ffffff" stroke-opacity="0.07" stroke-width="2"/>
+
+  <text x="128" y="132" filter="url(#cast)"
+        font-family="'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', system-ui, sans-serif"
+        font-size="172" font-weight="800" fill="#54a679"
+        text-anchor="middle" dominant-baseline="central">N</text>
+</svg>

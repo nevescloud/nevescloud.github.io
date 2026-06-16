@@ -1,0 +1,1314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script>
+  /* e-ink Kindle browser -> dedicated reader. Runs before any CSS/JS so the
+     ancient WebKit never parses the modern homepage. Fire tablets (Silk) are
+     modern Chromium and keep the normal site. Loop-safe + replace() so Back works. */
+  (function(){try{var u=navigator.userAgent||"";
+    if(/Kindle/.test(u)&&!/Silk/.test(u)&&location.pathname.indexOf("/kindle")!==0){
+      location.replace("https://neves.cloud/kindle/");}}catch(e){}})();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
+  <meta name="description" content="neves.cloud — agentic systems you can try in the browser. Live demos of WebRTC agents, on-device models, and MCP. No install, no signup.">
+  <meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1a1d20" media="(prefers-color-scheme: dark)">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="neves.cloud">
+  <meta property="og:description" content="Agentic systems you can try in the browser — live demos of WebRTC agents, on-device models, and MCP.">
+  <meta property="og:url" content="https://neves.cloud">
+  <title>neves.cloud</title>
+  <link rel="icon" type="image/svg+xml" href="./icon.svg">
+  <link rel="apple-touch-icon" href="./icon-apple.png">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      color-scheme: light dark;
+
+      /* Apple-neutral light surface — same register as me/docs (sibling
+         identity). Masters green accent for institutional/heritage feel;
+         persimmon held as --punct for hover-flash and danger-adjacent use.
+         Dark variant below via @media. */
+      --bg: #f5f5f7;
+      --surface: #ffffff;
+      --ink: #1d1d1f;
+      --ink-muted: #6e6e73;
+
+      --border-subtle:  rgba(0,0,0,0.06);
+      --border-default: rgba(0,0,0,0.10);
+      --border-strong:  rgba(0,0,0,0.18);
+
+      /* Masters green — heritage, institutional. */
+      --accent:        #006d51;
+      --accent-ink:    #ffffff;
+
+      --punct:  #E89923;   /* persimmon — hover-flash accent */
+      --danger: #C84E00;
+
+      --radius: 8px;
+      --ease: cubic-bezier(0.25, 0.8, 0.25, 1);
+
+      /* Type scale — four tiers, role-mapped. Sizes computed against the 16px html default.
+         display: wordmark only. Sized to read as a page heading rather
+                  than a hero claim — the work below substantiates identity.
+         body:    primary content (project names).
+         caption: descriptions, links, interactive chrome.
+         micro:   labels, footer captions, Pip metadata. */
+      --t-display: 1.25rem;
+      --t-body:    0.9375rem;
+      --t-caption: 0.75rem;
+      --t-micro:   0.6875rem;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1a1d20;
+        --surface: #212529;
+        --ink: #e9ecef;
+        --ink-muted: #adb5bd;
+        --border-subtle:  rgba(255,255,255,0.06);
+        --border-default: rgba(255,255,255,0.10);
+        --border-strong:  rgba(255,255,255,0.18);
+        --accent: #54a679;   /* lifted green for dark surface */
+      }
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", ui-sans-serif, sans-serif;
+      line-height: 1.5;
+      font-synthesis: none;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+      min-height: 100svh;
+      max-width: 960px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      /* Safe-area insets keep content out of the notch/Dynamic Island
+         in landscape; max() preserves the design min in portrait. */
+      padding: 3rem max(1.5rem, env(safe-area-inset-right)) 3rem max(1.5rem, env(safe-area-inset-left));
+      gap: 2rem;
+    }
+
+    /* Three-tier rhythm: inter-section (main gap) > page-header break
+       (body gap) > intra-section (section gap). Mirrors the resume's
+       2.5rem master gap so the two pages share a beat. */
+    main {
+      display: flex;
+      flex-direction: column;
+      gap: 2.5rem;
+    }
+
+    :focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .identity {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+      animation: fade-up 0.5s var(--ease) both;
+    }
+
+    .wordmark {
+      font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Helvetica Neue", ui-sans-serif, sans-serif;
+      font-size: var(--t-display);
+      font-weight: 700;
+      color: var(--ink);
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+    }
+
+    /* Self-introduction line. Carries the page's positioning claim —
+       outcome-first (what the visitor can do here), not a category
+       label — so the wordmark above can stay neutral and the cards
+       below can stay descriptive. */
+    .intro {
+      font-size: var(--t-body);
+      color: var(--ink-muted);
+      line-height: 1.45;
+      max-width: 56ch;
+    }
+    /* Proof strip — credibility sits adjacent to the claim it backs
+       (the intro), not buried in card bodies. One micro mono line;
+       the mono face groups it with the section labels as chrome. */
+    .proof {
+      font-family: "SF Mono", ui-monospace, Menlo, monospace;
+      font-size: var(--t-micro);
+      color: var(--ink-muted);
+      letter-spacing: 0.02em;
+    }
+
+    /* ── Sections ──────────────────────────────────────────────────── */
+    .projects {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      animation: fade-up 0.5s 0.16s var(--ease) both;
+    }
+    .projects-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.5rem;
+    }
+    @media (max-width: 1024px) {
+      .projects-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 600px) {
+      .projects-grid { grid-template-columns: minmax(0, 1fr); }
+    }
+
+    /* h2 styled as a small mono uppercase label — visual demotion is fine,
+       semantic role (heading) is what the screen reader announces. The
+       border-bottom is the section's structural break (resume uses the
+       same trick); pairs with main's 2.5rem inter-section gap. */
+    .section-label {
+      font-family: "SF Mono", ui-monospace, Menlo, monospace;
+      font-size: var(--t-micro);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--ink-muted);
+      border-bottom: 1px solid var(--border-default);
+      padding-bottom: 0.5rem;
+    }
+
+    /* ── Project cards ─────────────────────────────────────────────── */
+    .project-card {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-width: 0;
+      padding: 1rem 1.25rem;
+      border-radius: var(--radius);
+      border: 1px solid var(--border-default);
+      background: var(--surface);
+      text-decoration: none;
+      color: inherit;
+      transition: border-color 0.18s var(--ease), background 0.18s var(--ease), transform 0.18s var(--ease);
+    }
+
+    /* Card is now a div; the inner .project-link covers the whole card
+       so anywhere outside .project-github routes to the primary URL.
+       project-info opts out of pointer events so clicks pass through. */
+    .project-link {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      border-radius: inherit;
+    }
+    .project-github {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      z-index: 2;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 4px;
+      color: var(--ink-muted);
+      transition: color 0.15s var(--ease), background 0.15s var(--ease);
+    }
+    .project-github:hover {
+      color: var(--ink);
+      background: color-mix(in srgb, var(--ink) 8%, transparent);
+    }
+    .project-github:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+    .project-github svg { display: block; }
+    /* Touch devices skip the lift so it doesn't stick after tap. */
+    @media (hover: hover) {
+      .project-card:hover {
+        border-color: var(--border-strong);
+        transform: translateY(-1px);
+      }
+    }
+    /* :active is the only feedback touch users get — fires during the tap
+       and clears on release, so it can't stick. */
+    .project-card:active {
+      background: color-mix(in srgb, var(--ink) 5%, var(--surface));
+    }
+    .project-info {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      align-self: stretch;
+      gap: 0.25rem;
+      flex: 1;
+      min-width: 0;
+      pointer-events: none;
+    }
+    .project-name {
+      font-size: var(--t-body);
+      font-weight: 700;
+      color: var(--ink);
+      letter-spacing: -0.01em;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    /* Per-project icon — 14×14 stroked symbol from the sprite, muted at rest
+       so the name still leads typographically. Curated in projects.json via
+       the `icon` key; missing/unknown keys degrade to no-icon (the wrapper
+       isn't emitted). Sibling convention with me/docs/index.html's .card-icon. */
+    .project-icon {
+      width: 14px;
+      height: 14px;
+      color: var(--ink-muted);
+      flex-shrink: 0;
+      transition: color 0.18s var(--ease);
+    }
+    .project-card:hover .project-icon { color: var(--ink); }
+    .project-desc {
+      font-size: var(--t-caption);
+      color: var(--ink-muted);
+      line-height: 1.4;
+    }
+    /* Topics — small text pills below the description. Single row,
+       overflowing topics get clipped at the right edge. Cap of 4 from
+       the JS gives an upper bound; visitors see whatever fits the
+       card width. Soft fade on the right hints at clipped overflow. */
+    .project-topics {
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 4px;
+      margin-top: 6px;
+      overflow: hidden;
+      mask-image: linear-gradient(to right, black calc(100% - 12px), transparent 100%);
+      -webkit-mask-image: linear-gradient(to right, black calc(100% - 12px), transparent 100%);
+    }
+    .project-topic {
+      flex-shrink: 0;
+      font-size: var(--t-micro);
+      color: var(--ink-muted);
+      border: 1px solid var(--border-subtle);
+      border-radius: 3px;
+      padding: 1px 6px;
+      white-space: nowrap;
+      letter-spacing: 0.01em;
+    }
+
+    /* ── Visibility (owner-only surfaces) ──────────────────────────── */
+    /* Private rows stay fully legible (the owner is the audience that
+       needs to act on them); a dashed border carries the "provisional"
+       signal where opacity-dim used to, without crushing contrast. */
+    [data-public="false"] { display: none; }
+    body.owner [data-public="false"] { display: flex; border-style: dashed; }
+    body.owner [data-public="false"] .project-name::after {
+      content: ' · private';
+      font-size: 0.7em;
+      font-weight: 400;
+      color: var(--ink-muted);
+    }
+
+    /* ── Featured layout (driven by repo `featured` topic) ─────────── */
+    /* When a section contains a card with .is-featured, switch to a 2-col
+       compact grid. Featured cards span the full row; non-featured tile
+       below at smaller scale. Source of truth is each project repo's
+       topics — see .github/scripts/regenerate-projects.mjs. */
+    .projects-grid:has(.is-featured) .is-featured {
+      grid-column: 1 / -1;
+    }
+    .projects-grid:has(.is-featured) .is-featured.project-card {
+      padding: 0.875rem 1.25rem;
+      box-shadow: inset 3px 0 0 var(--accent);
+    }
+    .projects-grid:has(.is-featured) .is-featured .project-name {
+      font-size: 1rem;
+    }
+    .projects-grid:has(.is-featured) .project-card:not(.is-featured) {
+      padding: 0.6875rem 0.9375rem;
+    }
+    .projects-grid:has(.is-featured) .project-card:not(.is-featured) .project-name {
+      font-size: var(--t-caption);
+    }
+    /* Compact-when-featured cards: shrink the icon to match the smaller name. */
+    .projects-grid:has(.is-featured) .project-card:not(.is-featured) .project-icon {
+      width: 11px;
+      height: 11px;
+    }
+    .projects-grid:has(.is-featured) .project-card:not(.is-featured) .project-desc {
+      font-size: var(--t-micro);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    @media (max-width: 600px) {
+      .projects-grid:has(.is-featured) {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Footer — the page's one ask, placed at the natural exit point.
+       A convinced visitor needs an affordance to act on it; the
+       identity link out to jonasneves.com rides along. Still quiet:
+       visitors who came only for the work barely register it. */
+    .site-footer {
+      margin-top: auto;
+      padding-top: 2rem;
+      font-size: var(--t-micro);
+      color: var(--ink-muted);
+      animation: fade-up 0.5s 0.32s var(--ease) both;
+    }
+    .site-footer a {
+      color: var(--ink-muted);
+      text-decoration: underline;
+      text-decoration-color: var(--border-default);
+      text-underline-offset: 3px;
+      transition: color 0.15s var(--ease), text-decoration-color 0.15s var(--ease);
+    }
+    .site-footer a:hover { color: var(--ink); text-decoration-color: var(--border-strong); }
+
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    /* Pip — overrides of pip-core defaults (.pip-panel translucent blur,
+       hidden .pip-close, plain-text .pip-notify). Shares the --pip-*
+       color tokens bound below. */
+    :root {
+      --pip-surface: color-mix(in srgb, var(--surface) 92%, transparent);
+      --pip-ink: var(--ink);
+      --pip-ink-muted: var(--ink-muted);
+      --pip-border: var(--border-default);
+      --pip-accent: var(--accent);
+      /* Type defaults from pip-core (14px reply, 12px caption, 16/14px input)
+         are chat-dialog-tuned — yielding to them keeps replies tighter than
+         page body and preserves the iOS zoom-prevention floor on touch. */
+    }
+    @supports not (backdrop-filter: blur(1px)) {
+      :root { --pip-surface: var(--surface); }
+    }
+    .pip-panel {
+      border-radius: 16px;
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.14);
+    }
+    .pip-panel::after {
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+    }
+    .pip-bubble { z-index: 30; }
+    /* ESC and click-outside already dismiss; the × is redundant. */
+    .pip-close { display: none; }
+    /* Recessed input within the translucent panel — reads as a pocket at rest,
+       lifts to opaque surface on focus. Adapted from better-robotics; tint
+       (vs. solid var(--bg)) keeps the input legible over the blurred panel. */
+    .pip-input { background: color-mix(in srgb, var(--ink) 4%, transparent); }
+    .pip-input:focus { background: var(--surface); }
+    /* Drop pip's default right gutter so the intro spans the panel width. */
+    .pip-notify { margin: 0 0 12px 0; }
+    .pip-bubble.responding {
+      color: var(--accent);
+      animation: pip-robot-hue-sweep 3.2s ease-in-out infinite;
+    }
+    @keyframes pip-robot-hue-sweep {
+      0%, 100% { filter: hue-rotate(-60deg); }
+      50%      { filter: hue-rotate(60deg); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .pip-bubble.responding { animation: none; filter: none; }
+    }
+    /* ── user pill ──────────────────────────────────────────────────── */
+    #user-pill {
+      display: none;
+      position: fixed;
+      top: max(1rem, env(safe-area-inset-top));
+      right: max(1rem, env(safe-area-inset-right));
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.3125rem 0.625rem 0.3125rem 0.3125rem;
+      background: var(--surface);
+      border: 1px solid var(--border-default);
+      border-radius: 100px;
+      cursor: pointer;
+      font-size: var(--t-caption);
+      color: var(--ink-muted);
+      font-family: inherit;
+      transition: border-color 0.15s var(--ease), color 0.15s var(--ease);
+      z-index: 10;
+    }
+    #user-pill.visible { display: flex; }
+    #user-pill:hover { border-color: var(--border-strong); color: var(--ink); }
+    #user-avatar { border-radius: 50%; width: 20px; height: 20px; object-fit: cover; display: block; }
+
+    /* ── user dropdown ─────────────────────────────────────────────── */
+    #user-dropdown {
+      position: fixed;
+      z-index: 20;
+      min-width: 180px;
+      background: color-mix(in srgb, var(--surface) 92%, transparent);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border: 1px solid var(--border-default);
+      border-radius: 10px;
+      padding: 0.3125rem;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.14);
+      transform-origin: top right;
+      animation: dropdown-in 0.15s var(--ease) both;
+    }
+    @supports not (backdrop-filter: blur(1px)) {
+      #user-dropdown { background: var(--surface); }
+    }
+    @keyframes dropdown-in { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: scale(1); } }
+    .dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      width: 100%;
+      padding: 0.5rem 0.625rem;
+      border: none;
+      border-radius: 6px;
+      background: none;
+      color: var(--ink-muted);
+      font-size: var(--t-caption);
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.1s, color 0.1s;
+      text-decoration: none;
+    }
+    .dropdown-item:hover { background: var(--border-subtle); color: var(--ink); }
+    .dropdown-item svg { flex-shrink: 0; opacity: 0.5; }
+    .dropdown-item:hover svg { opacity: 0.8; }
+    /* Owner-only entries vanish for any other authed user; the linked
+       page redirects them too, but hiding the link avoids a dead-end click. */
+    body:not(.owner) .dropdown-owner { display: none; }
+    .dropdown-sep { height: 0; border-top: 0.5px solid var(--border-default); margin: 0.25rem 0.5rem; }
+    /* Online indicator on the user-pill — small green dot at top-right
+       while the operator is hosting, gone when offline. Driven by
+       body.operator-online (toggled from operator.esm.js's onStateChange). */
+    body.operator-online #user-pill::after {
+      content: '';
+      position: absolute;
+      top: -2px;
+      right: -2px;
+      width: 9px;
+      height: 9px;
+      background: #2f855a;
+      border: 2px solid var(--bg);
+      border-radius: 50%;
+    }
+    .dropdown-danger { color: var(--danger); }
+    .dropdown-danger:hover {
+      background: color-mix(in srgb, var(--danger) 8%, transparent);
+      color: var(--danger);
+    }
+    .dropdown-danger svg { opacity: 0.7; }
+  </style>
+</head>
+<body>
+
+  <header class="identity">
+    <h1 class="wordmark">neves.cloud</h1>
+    <p class="intro">Agent systems you can try in the browser: WebRTC agents, on-device models, robots.</p>
+    <p class="proof">Duke AIPI &middot; Duke RadChat originating engineer &middot; @nevescloud on npm</p>
+  </header>
+
+  <div hidden id="ai-instructions">
+    <h2>neves.cloud — mcp-rtc demos and labs</h2>
+    <p>Subpaths exposing MCP servers callable over WebRTC:</p>
+    <ul>
+      <li><code>/h/</code> — minimal MCP host. One tool: <code>get_greeting</code>.</li>
+      <li><code>/b/</code> — bridge tab. Open with <code>#&lt;site-id&gt;</code> to bridge a remote mcp-rtc server's tools to a local Claude with the Anthropic Chrome extension.</li>
+      <li><code>/p/</code> — phone-as-tools. Open on a phone for camera, GPS, clipboard, orientation as MCP tools.</li>
+      <li><code>/v/</code> — render target. Tool: <code>render(html)</code> displays whatever the AI sends.</li>
+    </ul>
+    <p>To call any mcp-rtc server hosted here from a stdio MCP client (Claude Code, Codex, Cursor, Claude Desktop), install the bridge once:</p>
+    <pre># Claude Code:  claude mcp add bridge -- npx -y @nevescloud/mcp-rtc-bridge
+# Codex CLI:    codex mcp add bridge -- npx -y @nevescloud/mcp-rtc-bridge
+# Cursor / Desktop / generic — add @nevescloud/mcp-rtc-bridge to mcpServers config</pre>
+    <p>Then call <code>connect({ siteId: "&lt;id&gt;" })</code> with the site id from a host page's URL fragment.</p>
+    <p>Spec: <a href="https://github.com/jonasneves/mcp-rtc/blob/main/SPEC.md">github.com/jonasneves/mcp-rtc/blob/main/SPEC.md</a>.</p>
+  </div>
+
+  <!-- Octocat geometry — used by .project-github links via <use>. -->
+  <svg width="0" height="0" aria-hidden="true" style="position:absolute">
+    <symbol id="octocat" viewBox="0 0 16 16" fill="currentColor">
+      <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/>
+    </symbol>
+
+    <!-- Project icons — lucide-style strokes at viewBox 24×24, used by
+         .project-icon via <use href="#icon-…"/>. fill/stroke set on each
+         symbol so consumers only need to inherit color. -->
+    <symbol id="icon-share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="11.49"/>
+    </symbol>
+    <symbol id="icon-cpu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="4" y="4" width="16" height="16" rx="2"/>
+      <rect x="9" y="9" width="6" height="6"/>
+      <line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/>
+      <line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/>
+      <line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/>
+      <line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/>
+    </symbol>
+    <symbol id="icon-activity" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+    </symbol>
+    <symbol id="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+      <circle cx="12" cy="12" r="3"/>
+    </symbol>
+    <symbol id="icon-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+      <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+      <line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>
+    </symbol>
+    <symbol id="icon-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
+      <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+    </symbol>
+    <symbol id="icon-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+    </symbol>
+    <symbol id="icon-bot" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="11" width="18" height="10" rx="2"/>
+      <circle cx="12" cy="5" r="2"/><path d="M12 7v4"/>
+      <line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/>
+    </symbol>
+    <symbol id="icon-box" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+      <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+      <line x1="12" y1="22.08" x2="12" y2="12"/>
+    </symbol>
+    <symbol id="icon-target" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
+    </symbol>
+    <symbol id="icon-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+    </symbol>
+    <symbol id="icon-camera" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+      <circle cx="12" cy="13" r="4"/>
+    </symbol>
+  </svg>
+
+  <main>
+    <section class="projects" aria-label="Projects">
+      <div class="projects-grid"></div>
+    </section>
+  </main>
+
+  <footer class="site-footer">Get in touch — <a href="#" id="contact-mail">email</a> &middot; <a href="https://linkedin.com/in/jonasnvs" target="_blank" rel="noopener">LinkedIn</a>. Built by <a href="https://jonasneves.com" target="_blank" rel="noopener">jonasneves.com</a>.</footer>
+  <script>
+  // Contact address is assembled at runtime, on interaction intent —
+  // no `mailto:` or `@` exists in the static HTML, so markup scrapers
+  // (and most JS-executing crawlers, which don't simulate hover/focus)
+  // never see it. The address is a Cloudflare Email Routing alias —
+  // rotatable at the zone if it ever starts drawing spam.
+  (() => {
+    const a = document.getElementById('contact-mail');
+    if (!a) return;
+    const arm = () => { a.href = 'mailto:' + ['hello', 'jonasneves.com'].join('@'); };
+    ['pointerenter', 'focus', 'touchstart'].forEach(ev =>
+      a.addEventListener(ev, arm, { once: true, passive: true }));
+    a.addEventListener('click', arm); // keyboard/AT activation fallback
+  })();
+  </script>
+
+  <!-- Pip (bubble + panel) is mounted by the in-browser assistant script via pip-core.esm.js. -->
+
+  <button id="user-pill" aria-haspopup="true" aria-expanded="false">
+    <img id="user-avatar" src="" alt="" width="20" height="20">
+    <span id="user-name"></span>
+  </button>
+
+  <div id="user-dropdown" role="menu" hidden>
+    <a class="dropdown-item" href="./dashboard/" role="menuitem">
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v9.5A1.75 1.75 0 0 1 14.25 13H8.06l-2.573 2.573A1.458 1.458 0 0 1 3 14.543V13H1.75A1.75 1.75 0 0 1 0 11.25Zm1.75-.25a.25.25 0 0 0-.25.25v9.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h6.5a.25.25 0 0 0 .25-.25v-9.5a.25.25 0 0 0-.25-.25Zm6.25 4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM4.5 6.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm7-1a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"/></svg>
+      Dashboard
+    </a>
+    <a class="dropdown-item dropdown-owner" href="./repos/" role="menuitem">
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M2 2.5A2.5 2.5 0 0 1 4.5 0h8.75a.75.75 0 0 1 .75.75v12.5a.75.75 0 0 1-.75.75h-2.5a.75.75 0 0 1 0-1.5h1.75v-2h-8a1 1 0 0 0-.714 1.7.75.75 0 1 1-1.072 1.05A2.495 2.495 0 0 1 2 11.5Zm10.5-1h-8a1 1 0 0 0-1 1v6.708A2.486 2.486 0 0 1 4.5 9h8ZM5 12.25a.25.25 0 0 1 .25-.25h3.5a.25.25 0 0 1 .25.25v3.25a.25.25 0 0 1-.4.2l-1.45-1.087a.249.249 0 0 0-.3 0L5.4 15.7a.25.25 0 0 1-.4-.2Z"/></svg>
+      Repos
+    </a>
+    <a class="dropdown-item dropdown-owner" href="./s/admin/" role="menuitem">
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M7.775 3.275a.75.75 0 0 0 1.06 1.06l1.25-1.25a2 2 0 1 1 2.83 2.83l-2.5 2.5a2 2 0 0 1-2.83 0 .75.75 0 0 0-1.06 1.06 3.5 3.5 0 0 0 4.95 0l2.5-2.5a3.5 3.5 0 0 0-4.95-4.95l-1.25 1.25Zm-4.69 9.64a2 2 0 0 1 0-2.83l2.5-2.5a2 2 0 0 1 2.83 0 .75.75 0 0 0 1.06-1.06 3.5 3.5 0 0 0-4.95 0l-2.5 2.5a3.5 3.5 0 0 0 4.95 4.95l1.25-1.25a.75.75 0 0 0-1.06-1.06l-1.25 1.25a2 2 0 0 1-2.83 0Z"/></svg>
+      Shares
+    </a>
+    <div class="dropdown-sep" role="separator"></div>
+    <button class="dropdown-item dropdown-danger" id="menu-signout" role="menuitem">
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M2 2.75C2 1.784 2.784 1 3.75 1h2.5a.75.75 0 0 1 0 1.5h-2.5a.25.25 0 0 0-.25.25v10.5c0 .138.112.25.25.25h2.5a.75.75 0 0 1 0 1.5h-2.5A1.75 1.75 0 0 1 2 13.25Zm10.44 4.5-1.97-1.97a.749.749 0 0 1 .326-1.275.749.749 0 0 1 .734.215l3.25 3.25a.75.75 0 0 1 0 1.06l-3.25 3.25a.749.749 0 0 1-1.275-.326.749.749 0 0 1 .215-.734l1.97-1.97H6.75a.75.75 0 0 1 0-1.5Z"/></svg>
+      Sign out
+    </button>
+  </div>
+
+  <!-- In-browser assistant. The operator (when online) writes the reply
+       and sends it through; env.text is what the visitor sees. The
+       local LFM is reserved for the offline fallback path — composes
+       1-2 sentences from the manifest facts when the operator isn't
+       reachable. -->
+
+  <script type="module">
+  import { createPip, createTransformersRenderer } from 'https://cdn.jsdelivr.net/npm/@nevescloud/pip@3.9.2/bundle/local.esm.js';
+  import { createRelayProvider }
+    from 'https://cdn.jsdelivr.net/npm/@nevescloud/pip-relay@0.11.0/docs/relay-provider.esm.js';
+  import { attach as attachAuth, githubProvider }
+    from 'https://cdn.jsdelivr.net/npm/@nevescloud/pip-auth@0.3.0/pip-auth.esm.js';
+
+  const HISTORY_LIMIT = 10;
+
+  // /model selects what does the work when the dashboard is unreachable.
+  // Online turns always go through the dashboard and display env.text
+  // verbatim; the local LFM variants only kick in for the offline path,
+  // composing 1-2 sentences from the manifest's facts.
+  // Declaration order is the surfaced order: autocomplete and the
+  // bare /model listing both inherit it. Local-first because the page
+  // defaults to LFM; `live` is opt-in.
+  // Gemma 4 caveat: it's a multimodal model (text+image+audio) that
+  // transformers.js loads via Gemma4ForConditionalGeneration + AutoProcessor.
+  // pip's local.esm.js currently uses AutoModelForCausalLM + AutoTokenizer,
+  // which may or may not pick up gemma-4 cleanly. If load fails at runtime,
+  // pip-core's local renderer needs a multimodal-aware loading branch.
+  const MODELS = {
+    "lfm-tiny": {
+      kind: "local",
+      id: "LiquidAI/LFM2.5-350M-ONNX",
+      label: "LFM2.5 350M", size: "~250MB",
+      notes: "In-browser fallback; no operator in the loop.",
+      dtype: "q4",
+      maxTokens: 256,
+      genParams: { temperature: 0.1, top_k: 50, repetition_penalty: 1.05 },
+    },
+    "lfm-thinking": {
+      kind: "local",
+      id: "LiquidAI/LFM2.5-1.2B-Thinking-ONNX",
+      label: "LFM2.5 1.2B Thinking", size: "~1.2GB",
+      notes: "In-browser, reasoning-tuned; no operator in the loop.",
+      dtype: "q4",
+      maxTokens: 1536,
+      genParams: { temperature: 0.05, top_k: 50, repetition_penalty: 1.05 },
+    },
+    gemma: {
+      kind: "local",
+      id: "onnx-community/gemma-4-E2B-it-ONNX",
+      label: "Gemma 4 E2B", size: "~1.5GB",
+      notes: "In-browser, instruction-tuned; multimodal-capable model used here for text composition.",
+      dtype: "q4f16",
+      maxTokens: 1024,
+      genParams: { temperature: 0.1, top_k: 50, repetition_penalty: 1.05 },
+    },
+    live: {
+      kind: "remote",
+      label: "Live", size: "—",
+      notes: "Demo: routes to Jonas's operator when active. Rarely staffed.",
+    },
+  };
+  const MODEL_STORAGE_KEY = "__neevs_model";
+  // Local LFM is the default — instant responses, no relay roundtrip,
+  // no operator-state shaping the page. `live` stays available via
+  // /model live for owner demos and as a stepping stone toward a
+  // dedicated Pip-relay demo page where the operator story is the point.
+  const DEFAULT_MODEL_KEY = "lfm-tiny";
+  let currentModelKey = localStorage.getItem(MODEL_STORAGE_KEY);
+  // Pre-rename localStorage values map to the new key so returning
+  // visitors don't get bounced back to the default.
+  if (currentModelKey === "claude") currentModelKey = "live";
+  if (currentModelKey === "tiny") currentModelKey = "lfm-tiny";
+  if (currentModelKey === "thinking") currentModelKey = "lfm-thinking";
+  if (!MODELS[currentModelKey]) currentModelKey = DEFAULT_MODEL_KEY;
+
+  // The pip-relay dashboard pushes a manifest on session open (cached to
+  // localStorage by relay-provider). The fallback below ships with the
+  // page so the offline LFM has something grounded to compose from on a
+  // first visit before the dashboard has ever been reached. The
+  // dashboard's pushed manifest overrides at runtime.
+  const FALLBACK_MANIFEST = {
+    facts: [
+      'neves.cloud is a portfolio of agentic-systems demos and labs by Jonas Neves.',
+      'Demos are interactive prototypes (Duke RadChat, TallyHo, CatWatcher). Labs are reusable tools and components (Pip, Better Robotics, CanvasFlow).',
+      'Built and maintained by Jonas Neves. For bio, resume, and contact, see jonasneves.com.',
+    ],
+    decline: "I'm not sure — try the project cards above, or see jonasneves.com for more about Jonas.",
+  };
+  let MANIFEST = FALLBACK_MANIFEST;
+  // The operator panel lives in the page's other <script type="module">
+  // block (auth + dropdown wiring), which can't read this module's
+  // bindings. Expose a live getter so the panel always sees the most
+  // recent manifest (dashboard pushes update MANIFEST in onManifest below).
+  window.__neevsGetManifest = () => MANIFEST;
+
+  // Local-model renderer for the offline path. The renderer caches the
+  // loaded model+tokenizer between turns; switching variants via /model
+  // calls setModel() with a fresh config and the next generate reloads.
+  const renderer = createTransformersRenderer();
+  function syncRenderer() {
+    const m = MODELS[currentModelKey];
+    if (m.kind !== 'local') return;
+    renderer.setModel({
+      id: m.id, dtype: m.dtype, maxTokens: m.maxTokens, genParams: m.genParams,
+    });
+  }
+  syncRenderer();
+
+  async function renderOffline({ manifest, message }, ctx) {
+    manifest = manifest || FALLBACK_MANIFEST;
+    const facts = manifest.facts || [];
+    const decline = manifest.decline || "Not sure — Jonas would know better.";
+    const sysLines = [
+      `You are the voice of ${location.host}. Answer in 1-2 sentences using ONLY the facts below. Never invent.`,
+      'If a question isn\u2019t covered, say so in one line. Greet back without volunteering a bio.',
+      '',
+      'Facts:',
+      ...facts.map((f) => `- ${f}`),
+      '',
+      `If you don\u2019t know: ${decline}`,
+    ];
+    return renderer.generate({
+      messages: [
+        { role: 'system', content: sysLines.join('\n') },
+        { role: 'user',   content: message },
+      ],
+      turnEl: ctx.turnEl,
+      setReplyText: ctx.setReplyText,
+      signal: ctx.signal,
+    });
+  }
+
+  // Forward-declared so onUnprompted can call back into Pip after pip is
+  // assigned below. createRelayProvider's hooks are invoked lazily (on
+  // session events), so the late binding is safe.
+  let pip;
+
+  // The bubble is always awake. Pip-core ships a sleeping visual that
+  // toggles via setSleeping(), but signaling "can I respond?" through
+  // bubble dimming made working assistants look broken — operator
+  // presence is already carried by the user-pill green dot, and LFM
+  // is always callable regardless of relay state. We never call
+  // setSleeping(true), so the default-awake state holds.
+
+  const provider = createRelayProvider({
+    siteId: location.host,
+    // Lazy-connect — the default model is local, so most visitors never
+    // touch the relay. Pairing only happens when someone explicitly
+    // /model switches to live and then submits. Lower pair / reply
+    // timeouts so a missing operator surfaces in ~10s instead of the
+    // library default 30s. autoReconnect re-pairs when the operator
+    // opens the dashboard mid-visit.
+    eager: false,
+    pairTimeoutMs: 10_000,
+    replyTimeoutMs: 12_000,
+    autoReconnect: true,
+    reconnectIntervalMs: 30_000,
+    async onEnvelope(env, ctx) {
+      // env.text is the operator-side AI's final prose; display verbatim.
+      return env.text || '\u2026';
+    },
+    async onOffline(ctx) {
+      // Local LFM composes from manifest facts; fall back to the decline
+      // string if no LFM is selected or the renderer throws.
+      if (MODELS[currentModelKey].kind === 'remote') {
+        return ctx.manifest?.decline || FALLBACK_MANIFEST.decline;
+      }
+      try { return await renderOffline(ctx, ctx); }
+      catch (err) {
+        return ctx.manifest?.decline || FALLBACK_MANIFEST.decline;
+      }
+    },
+    async onUnprompted(env, ctx) {
+      if (!pip) return;
+      const turnEl = pip.startTurn();
+      pip.setReplyText(turnEl, env.text || '\u2026', true);
+    },
+    onManifest(m) { MANIFEST = m; },
+  });
+
+  // The intro doubles as a demo claim — the answer itself is generated
+  // in-browser (default local LFM), which is the site's whole thesis.
+  const introText = "Ask about a project — answers are generated right in your browser.";
+  const fallbackReply = `Can\u2019t think right now — try again, or \`/model live\` if you switched to a local model.`;
+
+  // Route by selected model: relay only when the visitor explicitly chose
+  // `live`. On local models the relay's pair (≤10s) + reply (≤12s) timeouts
+  // would gate the loading spinner behind the WebRTC dance even though the
+  // local LFM is what's about to answer. Going straight to renderOffline
+  // means showLoading paints on first frame.
+  async function onSubmit(text, pipCtx) {
+    if (MODELS[currentModelKey].kind === 'remote') {
+      return provider.onSubmit(text, pipCtx);
+    }
+    const ctx = { ...(pipCtx || {}), manifest: MANIFEST, message: text };
+    try { return await renderOffline(ctx, ctx); }
+    catch (err) {
+      console.warn('[neves] local render threw', err);
+      return MANIFEST?.decline || FALLBACK_MANIFEST.decline;
+    }
+  }
+
+  pip = createPip({
+    container: document.body,
+    systemPrompt: '',
+    historyLimit: HISTORY_LIMIT,
+    introText,
+    introDismissMs: 5000,
+    autoOpen: window.matchMedia('(hover: hover) and (pointer: fine)').matches,
+    autoOpenDelayMs: 700,
+    // Web Speech-backed mic button; no-op on browsers without
+    // SpeechRecognition (Firefox, older Safari). Final transcripts
+    // flow through onSubmit exactly as if typed.
+    mic: true,
+    // Mirror autoOpen — system pulled the panel in, system releases it
+    // back if the visitor doesn't engage. 12s holds the 1:2 ratio with
+    // the intro fade (6s) + a matching beat for the placeholder before
+    // the panel dismisses. Cancelled instantly on focus/hover/click,
+    // so a careful reader who needs longer can still recover.
+    panelAutoCloseMs: 12_000,
+    placeholder: 'Ask anything\u2026',
+    maxLength: 2000,
+    fallbackReply,
+    onSubmit,
+    // Registered commands handle the known surface (below); this only
+    // catches typos so /foo doesn't get sent to the model for roleplay.
+    onSlash(text) {
+      const cmd = (text.slice(1).split(/\s+/)[0] || '').toLowerCase();
+      return { reply: `Unknown command \`/${cmd}\`. Type \`/\` to see the list.` };
+    },
+  });
+
+  const MODEL_KEYS = Object.keys(MODELS);
+  pip.registerSlash({
+    name: 'model',
+    description: 'switch rendering model (`/model <name>`)',
+    // Rich completions: dropdown shows the key + a label/size hint so the
+    // user can pick without consulting another page. Current model gets a
+    // marker so they can see what's active.
+    complete: (partial) => MODEL_KEYS
+      .filter(k => k.startsWith(partial.toLowerCase()))
+      .map(k => {
+        const m = MODELS[k];
+        const marker = k === currentModelKey ? '\u25CF ' : '';
+        return { name: k, description: `${marker}${m.label} \u00B7 ${m.size}` };
+      }),
+    handler: (argsString) => {
+      const arg = argsString.trim().toLowerCase();
+      // Bare /model: re-open the dropdown in arg-mode so the user picks
+      // a model from the same UI menu they reached the command from.
+      // pip-core 3.2.0+ openCompletions; older pips fall through to a turn.
+      if (!arg) return { openCompletions: true };
+      if (!MODELS[arg]) {
+        const opts = MODEL_KEYS.map(k => '`' + k + '`').join(', ');
+        return { reply: `Unknown model \`${arg}\`. Options: ${opts}` };
+      }
+      if (arg === currentModelKey) return { reply: `Already on **${MODELS[arg].label}**.` };
+      currentModelKey = arg;
+      localStorage.setItem(MODEL_STORAGE_KEY, arg);
+      syncRenderer();
+      pip.history.length = 0;
+      const note = MODELS[arg].kind === 'remote'
+        ? 'Operator-routed AI; Jonas may step in directly.'
+        : `Downloads on your next message (${MODELS[arg].size}, cached after).`;
+      return { reply: `Switched to **${MODELS[arg].label}**. ${note}` };
+    },
+  });
+
+  // Override built-in /clear so the intro notify is also hidden — built-in
+  // only clears history + turns.
+  pip.registerSlash({
+    name: 'clear',
+    description: 'clear conversation',
+    handler: () => {
+      pip.history.length = 0;
+      pip.turns.innerHTML = '';
+      pip.notify.hidden = true;
+      return { clearedUI: true };
+    },
+  });
+
+  // /auth slash — sole sign-in entry point. Writes to '__neevs_auth' so
+  // loadAuth() picks the session up on next page load (user pill, body.owner).
+  // Default scope is just identity; gist (share-link admin under /s/admin/)
+  // and repo (dashboard, /repos browser) are opt-in at sign-in time so the
+  // permission ask matches what the user actually wants to do.
+  attachAuth(pip, {
+    providers: [githubProvider({
+      clientId: 'Ov23li3dnFMUNHbu1SjZ',
+      callbackOrigin: 'https://auth.neevs.io',
+      scope: 'read:user',
+      optionalScopes: {
+        gist: 'Manage share-link admin',
+        repo: 'View your repositories',
+      },
+      storageKey: '__neevs_auth',
+    })],
+  });
+
+  // Status panel suppressed. pip-auth auto-registers a 'user' row; drop it so
+  // the panel — which auto-hides once no items remain — never surfaces. No
+  // 'model' row is registered either; model state stays discoverable via /model.
+  pip.unregisterStatusItem?.('user');
+
+  // No /help override: the slash autocomplete already lists every command, so a
+  // /help that just reprints that list is redundant.
+
+  // Cross-module bridge: the auth/dropdown module registers /ops on this
+  // pip instance once body.owner is set. Exposing pip on window keeps the
+  // module boundary while letting the operator surface live elsewhere.
+  window.__neevsPip = pip;
+
+  </script>
+
+  <script type="module">
+  import { verifyToken } from 'https://auth.neevs.io/lib.js';
+
+  const AUTH_KEY = '__neevs_auth';
+  const $ = id => document.getElementById(id);
+  const pillEl     = $('user-pill');
+  const avatarEl   = $('user-avatar');
+  const nameEl     = $('user-name');
+  const dropdownEl = $('user-dropdown');
+
+  let auth = null;
+
+  async function loadAuth() {
+    try {
+      auth = JSON.parse(localStorage.getItem(AUTH_KEY));
+      if (auth) await verifyToken(auth.token);
+    } catch {
+      auth = null;
+      localStorage.removeItem(AUTH_KEY);
+    }
+    if (auth) {
+      showPill();
+      if (auth.username === 'jonasneves') {
+        document.body.classList.add('owner');
+        registerOpsSlash();
+      }
+    }
+    loadRepos();
+  }
+
+  // /ops — owner-only slash that opens an in-chat option menu (Pip's
+  // askInChat) for operator controls. Lazy-loads operator.esm.js on
+  // first invocation, so visitors who never type /ops don't pay the
+  // bytes. The persistent at-a-glance signal is the green dot on the
+  // user-pill (driven by body.operator-online via onStateChange).
+  let operatorPanel = null;
+  async function ensureOperatorPanel() {
+    if (operatorPanel) return operatorPanel;
+    const { mountOperatorPanel } = await import('./operator.esm.js');
+    operatorPanel = mountOperatorPanel({
+      siteId: location.host,
+      getManifest: window.__neevsGetManifest,
+      operatorName: 'Jonas',
+      onStateChange: ({ online }) => {
+        document.body.classList.toggle('operator-online', online);
+      },
+    });
+    return operatorPanel;
+  }
+  function registerOpsSlash() {
+    const pip = window.__neevsPip;
+    if (!pip || !pip.registerSlash) return;
+    pip.registerSlash({
+      name: 'ops',
+      description: 'operator controls',
+      handler: async () => {
+        const turnEl = pip.startTurn({ echo: '/ops' });
+        const isOnline = operatorPanel?.isOnline?.() ?? false;
+        const choice = await pip.askInChat({
+          question: 'Operator',
+          options: [
+            isOnline ? 'Go offline' : 'Go online',
+            'Open dashboard',
+            'Cancel',
+          ],
+        }, turnEl);
+        if (!choice || choice === 'Cancel') {
+          pip.setReplyText(turnEl, 'cancelled', false);
+        } else if (choice === 'Go online') {
+          (await ensureOperatorPanel()).goOnline();
+          pip.setReplyText(turnEl, `Operator online \u2014 lobby pip-relay:${location.host}.`, false);
+        } else if (choice === 'Go offline') {
+          operatorPanel?.goOffline();
+          pip.setReplyText(turnEl, 'Operator offline.', false);
+        } else if (choice === 'Open dashboard') {
+          (await ensureOperatorPanel()).open();
+          pip.setReplyText(turnEl, 'Dashboard open.', false);
+        }
+        return { clearedUI: true };
+      },
+    });
+  }
+
+  // ── Project curation (docs/data/projects.json) ──────────────────────
+  // Single source of truth for Labs/Demos cards. Each entry is a full
+  // card definition (repo/section/name/desc/href, optional pinId/public).
+  // featured = full-width treatment, rendered first in its section in
+  // JSON order. visible = regular cards, also in JSON order. The same
+  // file's hide_from_repos drops repos from the standalone /repos/ list.
+  let _curationPromise = null;
+  function getCuration() {
+    if (!_curationPromise) {
+      _curationPromise = fetch('./data/projects.json?t=' + Date.now(), { cache: 'no-store' })
+        .then(r => r.ok ? r.json() : null)
+        .catch(() => null);
+    }
+    return _curationPromise;
+  }
+
+  function buildProjectCard(entry, isFeatured) {
+    const card = document.createElement('div');
+    card.className = 'project-card' + (isFeatured ? ' is-featured' : '');
+    card.dataset.repo = entry.repo;
+    if (entry.pinId) card.dataset.pinId = entry.pinId;
+    if (entry.public) card.dataset.public = 'true';
+
+    let link = null;
+    if (entry.href) {
+      link = document.createElement('a');
+      link.className = 'project-link';
+      link.href = entry.href;
+      link.target = '_blank';
+      link.rel = 'noopener';
+      link.setAttribute('aria-label', entry.name);
+    }
+
+    const info = document.createElement('div');
+    info.className = 'project-info';
+    const name = document.createElement('span');
+    name.className = 'project-name';
+    if (entry.icon) {
+      const ico = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      ico.setAttribute('class', 'project-icon');
+      ico.setAttribute('aria-hidden', 'true');
+      const useEl = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+      useEl.setAttribute('href', `#icon-${entry.icon}`);
+      ico.appendChild(useEl);
+      name.appendChild(ico);
+    }
+    name.appendChild(document.createTextNode(entry.name));
+    const desc = document.createElement('span');
+    desc.className = 'project-desc';
+    desc.textContent = entry.desc;
+    info.append(name, desc);
+
+    // Static topics — only set on cards whose source repo isn't reachable
+    // by enhanceLabsAndDemos() (private repos, org-owned repos). Public
+    // jonasneves/* repos should carry topics on GitHub instead, where
+    // they evolve with the work. The enhancer skips injection when
+    // .project-topics already exists, so the two sources never collide.
+    // Compact cards take 3 topic chips, featured 4, keeping the row
+    // inside the card width so chips don't clip mid-word.
+    const topicChips = Array.isArray(entry.topics)
+      ? entry.topics.slice(0, isFeatured ? 4 : 3)
+          .map(t => `<span class="project-topic">${escHtml(t)}</span>`).join('')
+      : '';
+    if (topicChips) {
+      const wrap = document.createElement('div');
+      wrap.className = 'project-topics';
+      wrap.innerHTML = topicChips;
+      info.appendChild(wrap);
+    }
+    if (link) card.append(link, info);
+    else card.append(info);
+
+    // Static GitHub icon — for cards whose source repo is publicly
+    // viewable but not in the fetched list (org-owned). Lets these
+    // cards carry the same secondary-link affordance as fetched-repo
+    // cards. Private-source cards omit the flag because the link
+    // would 404 for visitors; owners get the icon dynamically via
+    // enhanceLabsAndDemos() once the authed fetch resolves.
+    if (entry.publicRepo) {
+      const gh = document.createElement('a');
+      gh.className = 'project-github';
+      gh.href = `https://github.com/${entry.repo}`;
+      gh.target = '_blank';
+      gh.rel = 'noopener';
+      gh.setAttribute('aria-label', `${entry.name} on GitHub`);
+      gh.innerHTML = '<svg width="16" height="16" aria-hidden="true"><use href="#octocat"/></svg>';
+      card.appendChild(gh);
+    }
+
+    return card;
+  }
+
+  async function applyProjectsCuration() {
+    const data = await getCuration();
+    if (!data) return;
+    const grid = document.querySelector('.projects-grid');
+    if (!grid) return;
+    // Featured first (full-width via .is-featured), then visible. The
+    // `section` field on each entry is no longer used for layout — it's
+    // kept as informational metadata in projects.json.
+    for (const entry of (data.featured || [])) {
+      grid.appendChild(buildProjectCard(entry, true));
+    }
+    for (const entry of (data.visible || [])) {
+      grid.appendChild(buildProjectCard(entry, false));
+    }
+  }
+  const _renderPromise = applyProjectsCuration();
+
+  // Repos data — fetched only to feed enhanceLabsAndDemos(), which pulls
+  // topics + homepage onto the curated Labs/Demos cards. The standalone
+  // Repos browse view at /repos/ does its own authed fetch. Owner hits
+  // the authed endpoint so private repos come along too (private cards
+  // in Labs/Demos still get their GitHub-icon secondary link); visitors
+  // hit the anonymous public-repos endpoint. Cache is sessionStorage
+  // with a 2-min TTL, keyed by auth state so a sign-in doesn't read a
+  // stale public-only cache.
+  const REPOS_CACHE_PREFIX = '__neevs_repos_cache_';
+  const REPOS_CACHE_TTL = 2 * 60 * 1000;
+  let _repos = null;
+
+  function escHtml(s) {
+    return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  async function loadRepos() {
+    const isOwner = !!(auth && auth.username === 'jonasneves');
+    const cacheKey = REPOS_CACHE_PREFIX + (isOwner ? 'authed' : 'public');
+    let cached = null;
+    try {
+      const e = JSON.parse(sessionStorage.getItem(cacheKey));
+      if (e && Date.now() - e.ts < REPOS_CACHE_TTL) cached = e.data;
+    } catch {}
+    if (cached) {
+      _repos = cached;
+    } else {
+      const url = isOwner
+        ? 'https://api.github.com/user/repos?per_page=100&sort=updated&affiliation=owner'
+        : 'https://api.github.com/users/jonasneves/repos?per_page=100&sort=updated';
+      const headers = isOwner
+        ? { Authorization: `Bearer ${auth.token}`, Accept: 'application/vnd.github+json' }
+        : { Accept: 'application/vnd.github+json' };
+      try {
+        const res = await fetch(url, { headers });
+        if (!res.ok) return;
+        _repos = await res.json();
+        // Drop archived repos — they're done, not active work.
+        _repos = _repos.filter(r => !r.archived);
+        try { sessionStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: _repos })); } catch {}
+      } catch { _repos = []; }
+    }
+    await _renderPromise;
+    enhanceLabsAndDemos();
+  }
+
+  // Pull topics + homepage from the already-fetched repo list onto the
+  // JSON-rendered Labs/Demos cards. The card's .project-link keeps its
+  // configured href as a fallback if no homepage is set. The GitHub
+  // icon shows whenever the card's primary link points somewhere
+  // other than the repo's GitHub URL — so a card linking out to a
+  // demo or homepage carries a secondary link to source. Only matches
+  // repos in the user's account list, so org-owned cards (e.g.
+  // safe-t-ai/*) rely on the static publicRepo flag instead.
+  function enhanceLabsAndDemos() {
+    const byRepo = Object.fromEntries(
+      (_repos || []).map(r => [`${r.owner.login}/${r.name}`, r])
+    );
+    document.querySelectorAll('.project-card[data-repo]').forEach(card => {
+      const repo = byRepo[card.dataset.repo];
+      if (!repo) return;
+      const link = card.querySelector('.project-link');
+      if (repo.homepage && link) link.href = repo.homepage;
+      if (repo.topics && repo.topics.length) {
+        const info = card.querySelector('.project-info');
+        // A wrap holding only the try-it chip still wants GitHub topics
+        // appended; a wrap with static topics already has its set.
+        let wrap = info && info.querySelector('.project-topics');
+        if (info && !(wrap && wrap.querySelector('.project-topic'))) {
+          if (!wrap) {
+            wrap = document.createElement('div');
+            wrap.className = 'project-topics';
+            info.appendChild(wrap);
+          }
+          // Mirror buildProjectCard's 3/4 chip cap.
+          wrap.insertAdjacentHTML('beforeend', repo.topics.slice(0, card.classList.contains('is-featured') ? 4 : 3)
+            .map(t => `<span class="project-topic">${escHtml(t)}</span>`).join(''));
+        }
+      }
+      if (repo.html_url && link && link.href !== repo.html_url
+          && !card.querySelector('.project-github')) {
+        const gh = document.createElement('a');
+        gh.className = 'project-github';
+        gh.href = repo.html_url;
+        gh.target = '_blank';
+        gh.rel = 'noopener';
+        gh.setAttribute('aria-label', `${repo.name} on GitHub`);
+        gh.innerHTML = '<svg width="16" height="16" aria-hidden="true"><use href="#octocat"/></svg>';
+        card.appendChild(gh);
+      }
+    });
+  }
+
+  function saveAuth(data) {
+    auth = data;
+    localStorage.setItem(AUTH_KEY, JSON.stringify(data));
+    showPill();
+  }
+
+  function clearAuth() {
+    auth = null;
+    localStorage.removeItem(AUTH_KEY);
+    pillEl.classList.remove('visible');
+    document.body.classList.remove('owner');
+  }
+
+  function showPill() {
+    avatarEl.src = auth.avatarUrl;
+    nameEl.textContent = auth.username;
+    pillEl.classList.add('visible');
+  }
+
+  function openDropdown() {
+    const rect = pillEl.getBoundingClientRect();
+    dropdownEl.style.top   = (rect.bottom + 6) + 'px';
+    dropdownEl.style.right = (window.innerWidth - rect.right) + 'px';
+    dropdownEl.hidden = false;
+    pillEl.setAttribute('aria-expanded', 'true');
+    setTimeout(() => document.addEventListener('click', closeDropdownOutside), 0);
+  }
+
+  function closeDropdown() {
+    dropdownEl.hidden = true;
+    pillEl.setAttribute('aria-expanded', 'false');
+    document.removeEventListener('click', closeDropdownOutside);
+  }
+
+  function closeDropdownOutside(e) {
+    if (!dropdownEl.contains(e.target) && e.target !== pillEl) closeDropdown();
+  }
+
+  pillEl.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dropdownEl.hidden ? openDropdown() : closeDropdown();
+  });
+
+  $('menu-signout').addEventListener('click', () => {
+    closeDropdown();
+    clearAuth();
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeDropdown();
+  });
+
+  loadAuth();
+  </script>
+
+</body>
+</html>

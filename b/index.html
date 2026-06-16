@@ -1,0 +1,651 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>connect · neves.cloud</title>
+<meta name="description" content="Bridge a remote mcp-rtc server's tools to your local Claude. Paste a site id, mount the bridge, talk to Claude.">
+<!-- Machine-readable hint for agents that fetch this page. Not a standard
+     yet; tracking the shape we'd want once mcp-discovery conventions emerge. -->
+<meta name="mcp-install-hint" content='{"role":"bridge","stdio":{"command":"npx","args":["-y","@nevescloud/mcp-rtc-bridge"],"afterInstall":{"tool":"connect","argsTemplate":{"siteId":"{fragment}"}}},"webmcp":{"requires":"Chrome 146+ with a WebMCP consumer (e.g. Anthropic Claude extension)","action":"open this URL in such a tab"},"docs":"https://github.com/jonasneves/mcp-rtc"}'>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 60 24%22><rect x=%222%22 y=%226%22 width=%2212%22 height=%2212%22 rx=%223%22 fill=%22%231E40AF%22/><rect x=%2246%22 y=%226%22 width=%2212%22 height=%2212%22 rx=%223%22 fill=%22%231E40AF%22/><path d=%22M14 12 q5 -5 11 0 t11 0 t11 0%22 fill=%22none%22 stroke=%22%231E40AF%22 stroke-width=%221.8%22/></svg>">
+
+<!-- Front-load the pip local-model bytes during HTML parse instead of
+     waiting for the <script type="module"> below to run.
+       - preconnect opens the TLS sessions to the library + model CDNs
+         while the rest of the doc parses.
+       - modulepreload starts the pip bundle download in parallel with
+         document load; when local.esm.js executes it'll then fire its
+         own injectNetworkHints() that adds the @huggingface/transformers
+         modulepreload — chain effect.
+     Net: pip + transformers + initial HF index race the rest of page
+     boot instead of serializing after script-module evaluation. -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preconnect" href="https://huggingface.co" crossorigin>
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/@nevescloud/pip@3.9.1/bundle/local.esm.js" crossorigin>
+<style>
+  :root {
+    color-scheme: light dark;
+
+    /* surfaces */
+    --bg:        #f5f5f7;
+    --surface:   #ffffff;
+    --surface-2: #fafafc;
+    --ink:       #1d1d1f;
+    --ink-muted: #6e6e73;
+    --ink-faint: #8e8e93;
+    --border:    rgba(0,0,0,0.10);
+    --border-soft: rgba(0,0,0,0.06);
+    --code-bg:   rgba(0,0,0,0.06);
+
+    /* accent — interactive, focus, wordmark.
+       Semantic palette inspired by Duke (royal/persimmon/copper) + neves green.
+       States are kept few: idle / connecting / bridged / error. */
+    --accent:           #1E40AF;
+    --accent-strong:    #1E3A8A;
+    --accent-soft:      rgba(30,64,175,0.10);
+    --accent-ink:       #ffffff;
+
+    --st-idle-fg:       #8e8e93;
+    --st-connecting-fg: #C97D14;
+    --st-connecting-bg: rgba(232,153,35,0.12);
+    --st-bridged-fg:    #006d51;
+    --st-bridged-bg:    rgba(0,109,81,0.10);
+    --st-error-fg:      #C84E00;
+    --st-error-bg:      rgba(200,78,0,0.08);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:        #1a1d20;
+      --surface:   #262a2e;
+      --surface-2: #21252a;
+      --ink:       #e9ecef;
+      --ink-muted: #adb5bd;
+      --ink-faint: #6e757c;
+      --border:    rgba(255,255,255,0.10);
+      --border-soft: rgba(255,255,255,0.06);
+      --code-bg:   rgba(255,255,255,0.08);
+
+      --accent:        #60A5FA;
+      --accent-strong: #93C5FD;
+      --accent-soft:   rgba(96,165,250,0.14);
+      --accent-ink:    #0e1424;
+
+      --st-idle-fg:       #8e8e93;
+      --st-connecting-fg: #f5b452;
+      --st-connecting-bg: rgba(245,180,82,0.14);
+      --st-bridged-fg:    #66b288;
+      --st-bridged-bg:    rgba(102,178,136,0.14);
+      --st-error-fg:      #e57057;
+      --st-error-bg:      rgba(229,112,87,0.14);
+    }
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  [hidden] { display: none !important; }
+  body { background: var(--bg); color: var(--ink);
+    font: 15px/1.55 system-ui, -apple-system, sans-serif;
+    min-height: 100vh; display: flex; flex-direction: column;
+    -webkit-font-smoothing: antialiased; }
+
+  /* header ───────────────────────────────────────────────────── */
+  header {
+    padding: 0.65rem 1.25rem; border-bottom: 1px solid var(--border);
+    display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;
+    background: var(--surface);
+  }
+  .brand { display: flex; align-items: center; gap: 0.55rem;
+    color: var(--accent); text-decoration: none; }
+  .brand svg { display: block; flex-shrink: 0; }
+  .wordmark { font-size: 14px; font-weight: 600; letter-spacing: -0.01em;
+    color: var(--ink); }
+  .wordmark .mcp { color: var(--accent); }
+  .wordmark .sep { color: var(--ink-faint); margin: 0 0.1em; font-weight: 400; }
+  .wordmark .rtc { color: var(--ink); opacity: 0.85; }
+
+  #site-id { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px;
+    background: var(--code-bg); padding: 0.3rem 0.65rem; border-radius: 6px;
+    color: var(--ink); }
+
+  #status { margin-left: auto; display: inline-flex; align-items: center;
+    gap: 0.4rem; font-size: 12px; padding: 0.25rem 0.7rem; border-radius: 999px;
+    background: var(--surface-2); border: 1px solid var(--border-soft);
+    color: var(--ink-muted); transition: all 0.2s ease; }
+  #status.idle       { color: var(--st-idle-fg); }
+  #status.connecting { color: var(--st-connecting-fg); background: var(--st-connecting-bg); border-color: transparent; }
+  #status.bridged    { color: var(--st-bridged-fg); background: var(--st-bridged-bg); border-color: transparent; }
+  #status.error      { color: var(--st-error-fg); background: var(--st-error-bg); border-color: transparent; }
+  .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+    background: currentColor; }
+  #status.connecting .dot { animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: 0.45; transform: scale(0.7); }
+  }
+
+  /* layout ───────────────────────────────────────────────────── */
+  main { flex: 1; padding: 3rem 1.25rem 3rem; }
+  .container { max-width: 600px; margin: 0 auto; }
+
+  /* signature mark ───────────────────────────────────────────── */
+  .sig rect { fill: currentColor; }
+  .sig path { stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; }
+  .brand .sig { color: var(--accent); display: block; flex-shrink: 0; }
+  .sig.lg { color: var(--accent); width: 96px; height: 38px;
+    margin: 0 auto 1.5rem; display: block; opacity: 0.95; }
+  .sig.connecting path { stroke-dasharray: 4 3; animation: dash 1.4s linear infinite; }
+  @keyframes dash {
+    to { stroke-dashoffset: -14; }
+  }
+
+  /* empty state ──────────────────────────────────────────────── */
+  .lede { font-size: 22px; line-height: 1.4; color: var(--ink);
+    margin: 0 0 0.6rem; font-weight: 500; text-align: center; }
+  .lede em { font-style: normal; color: var(--accent); }
+  .sub { font-size: 14px; color: var(--ink-muted); margin: 0 auto 1.75rem;
+    text-align: center; max-width: 480px; }
+
+  form { display: flex; gap: 0.5rem; margin: 0 0 1.5rem; }
+  input[type="text"] {
+    flex: 1; min-width: 0; padding: 0.7rem 0.9rem;
+    background: var(--surface); color: var(--ink);
+    border: 1px solid var(--border); border-radius: 8px;
+    font: inherit; font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 14px; transition: border-color 0.15s;
+  }
+  input[type="text"]:focus { outline: none; border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft); }
+  button.primary { padding: 0.7rem 1.2rem; background: var(--accent);
+    color: var(--accent-ink); border: none; border-radius: 8px;
+    font: inherit; font-weight: 500; cursor: pointer;
+    transition: background 0.15s; }
+  button.primary:hover { background: var(--accent-strong); }
+
+  .help { background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1rem 1.25rem; margin: 1rem 0;
+    color: var(--ink-muted); font-size: 13px; line-height: 1.55; }
+  .help h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--ink-faint); font-weight: 600; margin-bottom: 0.5rem; }
+  .help p { margin: 0.4rem 0; }
+  .help code { font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    background: var(--code-bg); padding: 0.1rem 0.35rem; border-radius: 3px;
+    font-size: 12px; }
+  .help a { color: var(--accent); text-decoration: none; }
+  .help a:hover { text-decoration: underline; }
+  .help strong { color: var(--ink); font-weight: 600; }
+
+  /* connecting state ─────────────────────────────────────────── */
+  .knock-stage { text-align: center; padding: 1.5rem 0 1rem; }
+  .knock-text { font-size: 16px; color: var(--st-connecting-fg);
+    font-weight: 500; min-height: 24px;
+    transition: opacity 0.3s ease; }
+  .knock-sub { font-size: 13px; color: var(--ink-muted); margin-top: 0.5rem; }
+  .knock-sub code { font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    color: var(--ink); }
+
+  /* mounted (bridged) state ──────────────────────────────────── */
+  .card { background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1.25rem 1.5rem; margin: 0 0 1rem; }
+  .card.error { border-color: var(--st-error-fg); }
+  .card.error h2 { color: var(--st-error-fg); }
+  .card h2 { font-size: 16px; margin-bottom: 0.5rem; color: var(--ink);
+    font-weight: 600; }
+  .card p { color: var(--ink-muted); font-size: 14px; margin: 0.4rem 0; }
+  .card code { font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    background: var(--code-bg); padding: 0.1rem 0.35rem; border-radius: 3px;
+    font-size: 12px; }
+  .card a { color: var(--accent); text-decoration: none; }
+  .card a:hover { text-decoration: underline; }
+
+  .tools { margin: 0.85rem 0 0.25rem; padding: 0.6rem 0; border-top: 1px solid var(--border-soft); }
+  .tool-row { display: flex; align-items: baseline; gap: 0.5rem;
+    padding: 0.35rem 0.25rem; font-size: 13px; }
+  .tool-bullet { width: 5px; height: 5px; border-radius: 50%;
+    background: var(--st-bridged-fg); display: inline-block; flex-shrink: 0;
+    transform: translateY(-2px); }
+  .tool-name { font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    color: var(--ink); font-size: 12.5px; }
+
+  .nudge { font-size: 13px; color: var(--ink-muted); margin-top: 0.85rem;
+    padding-top: 0.85rem; border-top: 1px solid var(--border-soft); }
+  .nudge em { font-style: normal; color: var(--ink); font-weight: 500; }
+
+  /* Pip-nudge card — sits below the bridge card after a successful
+     mount. The arrow points down-right toward the pip bubble, which
+     lives in the viewport's bottom-right corner (popover, not anchored
+     to any card — so the arrow is directional cue, not literal). */
+  .card + .card { margin-top: 1rem; }
+  .pip-nudge { position: relative; padding-right: 4.5rem; }
+  .pip-nudge h2 { font-size: 14px; margin-bottom: 0.4rem; }
+  .pip-nudge p { margin: 0; font-size: 13px; color: var(--ink-muted); line-height: 1.55; }
+  .pip-nudge p em { font-style: normal; color: var(--ink); font-weight: 500;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12.5px; }
+  .pip-nudge p a { color: var(--accent); text-decoration: none; }
+  .pip-nudge p a:hover { text-decoration: underline; }
+  .pip-nudge-arrow { position: absolute; right: 0.85rem; bottom: 0.85rem;
+    width: 56px; height: 56px;
+    color: var(--st-bridged-fg); opacity: 0.75; pointer-events: none; }
+  @media (prefers-reduced-motion: no-preference) {
+    @keyframes pip-arrow-pulse {
+      0%, 100% { transform: translate(0, 0); opacity: 0.55; }
+      50%      { transform: translate(2px, 2px); opacity: 0.9; }
+    }
+    .pip-nudge-arrow { animation: pip-arrow-pulse 2.6s ease-in-out infinite; }
+  }
+
+  /* footer ───────────────────────────────────────────────────── */
+  footer { padding: 1.25rem; color: var(--ink-faint); font-size: 12px;
+    border-top: 1px solid var(--border-soft); text-align: center; }
+  footer a { color: var(--ink-muted); text-decoration: none; margin: 0 0.4rem; }
+  footer a:hover { color: var(--ink); }
+
+  /* Pip integration palette — mirrors hatch's design tokens
+     (#1D6363 teal accent, ECEEF2 / 2C3039 elevated surfaces, neutral
+     ink). pip-core reads --pip-* off :root so the host page and
+     pip's panel stay independent — the page keeps its #1E40AF blue,
+     the pip bubble adopts hatch's teal.
+
+     Why @media + explicit values (not light-dark()): pip-core forces
+     `color-scheme: light` on .pip-panel to avoid surprising hosts.
+     That makes light-dark() always return the LIGHT branch inside
+     pip, regardless of OS pref. Setting --pip-* to concrete colors
+     per @media block bypasses the issue. The .pip-panel override
+     below additionally lets pip's own light-dark() fallbacks resolve
+     against the host's color scheme. */
+  :root {
+    --pip-accent:    #1D6363;
+    --pip-on-accent: #ffffff;
+    --pip-surface:   #ffffff;
+    --pip-ink:       #1A1D23;
+    --pip-ink-muted: #5F6368;
+    --pip-border:    rgba(0,0,0,0.10);
+    --pip-input-bg:  #ECEEF2;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --pip-surface:   #22262D;
+      --pip-ink:       #E8EAED;
+      --pip-ink-muted: #8B9099;
+      --pip-border:    rgba(255,255,255,0.10);
+      --pip-input-bg:  #2C3039;
+    }
+  }
+  .pip-panel { color-scheme: light dark; }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "@nevescloud/mcp-rtc-bridge-tab": "https://esm.sh/@nevescloud/mcp-rtc-bridge-tab@0.1.1?external=zod&deps=zod@4.4.3",
+    "@nevescloud/mcp-rtc":             "https://esm.sh/@nevescloud/mcp-rtc@0.1.1",
+    "@modelcontextprotocol/sdk/client/index.js":
+      "https://esm.sh/@modelcontextprotocol/sdk@1.29.0/client?external=zod&deps=zod@4.4.3",
+    "zod":         "https://esm.sh/zod@4.4.3/es2022/v4/classic/external.mjs",
+    "zod/v4":      "https://esm.sh/zod@4.4.3/es2022/v4/classic/external.mjs",
+    "zod/v3":      "https://esm.sh/zod@4.4.3/v3",
+    "zod/v4-mini": "https://esm.sh/zod@4.4.3/v4-mini",
+    "@nevescloud/pip/bundle/local":
+      "https://cdn.jsdelivr.net/npm/@nevescloud/pip@3.9.1/bundle/local.esm.js"
+  }
+}
+</script>
+</head>
+<body>
+<header>
+  <a class="brand" href="/b/">
+    <svg class="sig" width="48" height="20" viewBox="0 0 60 24" aria-hidden="true">
+      <rect x="2" y="6" width="12" height="12" rx="3"/>
+      <rect x="46" y="6" width="12" height="12" rx="3"/>
+      <path d="M14 12 q5 -5 11 0 t11 0 t11 0"/>
+    </svg>
+    <span class="wordmark"><span class="mcp">mcp</span><span class="sep">·</span><span class="rtc">rtc</span></span>
+  </a>
+  <span id="site-id" hidden></span>
+  <span id="status" class="idle" role="status" aria-live="polite" hidden><span class="dot" aria-hidden="true"></span><span id="status-text"></span></span>
+</header>
+<div hidden id="ai-instructions">
+  <h2>mcp-rtc bridge</h2>
+  <p>This page bridges the remote MCP server identified by the URL fragment (<code>neves.cloud/b/#&lt;site-id&gt;</code>) over WebRTC. To call its tools from a stdio MCP client, install the bridge once:</p>
+  <pre># Claude Code
+claude mcp add bridge -- npx -y @nevescloud/mcp-rtc-bridge
+
+# Codex CLI
+codex mcp add bridge -- npx -y @nevescloud/mcp-rtc-bridge
+
+# Cursor / Claude Desktop / any stdio MCP client — add to mcpServers config:
+{ "mcpServers": { "bridge": { "command": "npx", "args": ["-y", "@nevescloud/mcp-rtc-bridge"] } } }</pre>
+  <p>Then: <code>connect({ siteId: "&lt;id-after-#-in-this-URL&gt;" })</code>. The bridge speaks standard MCP — <code>listTools</code>, <code>callTool</code>.</p>
+  <p>For Claude.ai web with the Anthropic Chrome extension: open this URL in that tab; the bridge mounts automatically.</p>
+</div>
+<main><div class="container" id="main"></div></main>
+<footer>
+  <a href="https://github.com/jonasneves/mcp-rtc">github</a>·
+  <a href="https://www.npmjs.com/package/@nevescloud/mcp-rtc-bridge-tab">bridge-tab</a>·
+  <a href="https://github.com/jonasneves/mcp-rtc/blob/main/SPEC.md">spec</a>
+</footer>
+
+<script type="module">
+import { mountBridge } from '@nevescloud/mcp-rtc-bridge-tab';
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { WebRTCClientTransport } from '@nevescloud/mcp-rtc';
+import { createPip, createRuntime, local } from '@nevescloud/pip/bundle/local';
+
+// Site id is the bare URL fragment. Empty fragment → no site selected.
+function parseHash() {
+  const raw = location.hash.replace(/^#/, '');
+  return { site: raw ? decodeURIComponent(raw) : null };
+}
+
+// ── DOM ─────────────────────────────────────────────────────────
+const main = document.getElementById('main');
+const siteIdEl = document.getElementById('site-id');
+const statusBox = document.getElementById('status');
+const statusText = document.getElementById('status-text');
+
+function setStatus(text, kind = 'idle') {
+  statusText.textContent = text;
+  statusBox.className = kind;
+  statusBox.hidden = false;
+}
+
+// knock messages — same voice as @nevescloud/mcp-rtc-bridge
+const KNOCKS = [
+  'knock knock', 'anyone home?', '*polite cough*', 'still knocking',
+  'psst…', 'any minute now…', 'hmm', 'still here',
+];
+
+// ── empty state ─────────────────────────────────────────────────
+function renderEmpty() {
+  main.innerHTML = `
+    <svg class="sig lg" viewBox="0 0 60 24" aria-hidden="true">
+      <rect x="2" y="6" width="12" height="12" rx="3"/>
+      <rect x="46" y="6" width="12" height="12" rx="3"/>
+      <path d="M14 12 q5 -5 11 0 t11 0 t11 0"/>
+    </svg>
+    <p class="lede">Bridge a remote tab's tools to your <em>local Claude</em>.</p>
+    <p class="sub">Paste an <code>mcp-rtc</code> site id; this tab becomes a WebMCP bridge in front of it.
+      Any local Claude with the Anthropic Chrome extension can then call the remote tab's tools natively.</p>
+    <form id="paste-form" autocomplete="off">
+      <input type="text" id="site-input" placeholder="cv-abc12345 or paste a full URL with #cv-abc12345" autofocus>
+      <button type="submit" class="primary">Connect</button>
+    </form>
+    <div class="help">
+      <h2>What is this?</h2>
+      <p>A short URL for <a href="https://github.com/jonasneves/mcp-rtc"><code>mcp-rtc</code></a>'s browser
+        bridge. Anyone running an mcp-rtc server (a browser tab, a Node process, a phone) advertises a
+        site id; pasting it here connects this tab to that server.</p>
+      <p>Two ways to use the tools, on this same page:</p>
+      <ul style="margin: 0.4rem 0 0.4rem 1.2rem; padding: 0;">
+        <li><strong>WebMCP path</strong> — Chrome 146+ with a WebMCP consumer attached (e.g. the Anthropic Claude extension). Your local Claude calls the remote tools natively.</li>
+        <li><strong>In-page chat</strong> — a floating chat bubble with a local open-weights model (via <a href="https://github.com/nevescloud/pip">pip</a> + transformers.js + WebGPU). No API key, no vendor; works in any modern browser with WebGPU.</li>
+      </ul>
+      <p>Try a working demo: <a href="/h/">open a host</a>, copy the site id, paste it above.</p>
+    </div>
+  `;
+  document.getElementById('paste-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const raw = document.getElementById('site-input').value.trim();
+    if (!raw) return;
+    // Accept either a bare site id (cv-abc12345) or a full URL whose
+    // fragment IS the site id (https://neves.cloud/b/#cv-abc12345).
+    let site = raw;
+    try { site = new URL(raw).hash.replace(/^#/, '') || raw; } catch {}
+    location.hash = '#' + encodeURIComponent(site);
+    location.reload();
+  });
+}
+
+// ── connecting state ────────────────────────────────────────────
+function showConnecting(site) {
+  siteIdEl.textContent = site;
+  siteIdEl.hidden = false;
+  setStatus('connecting', 'connecting');
+  main.innerHTML = `
+    <svg class="sig lg connecting" viewBox="0 0 60 24" aria-hidden="true">
+      <rect x="2" y="6" width="12" height="12" rx="3"/>
+      <rect x="46" y="6" width="12" height="12" rx="3"/>
+      <path d="M14 12 q5 -5 11 0 t11 0 t11 0"/>
+    </svg>
+    <div class="knock-stage">
+      <div class="knock-text" id="knock-text">${KNOCKS[0]}</div>
+      <div class="knock-sub">connecting · <code>${site}</code></div>
+    </div>
+  `;
+  // rotate knock messages every 2.5s
+  let i = 1;
+  const knockEl = document.getElementById('knock-text');
+  const interval = setInterval(() => {
+    if (!document.body.contains(knockEl)) { clearInterval(interval); return; }
+    knockEl.style.opacity = '0';
+    setTimeout(() => {
+      knockEl.textContent = KNOCKS[i % KNOCKS.length];
+      knockEl.style.opacity = '1';
+      i++;
+    }, 200);
+  }, 2500);
+  return interval;
+}
+
+// ── bridged state ───────────────────────────────────────────────
+function renderBridged({ site, tools, webmcpStatus }) {
+  setStatus(`bridged · ${tools.length} tool${tools.length === 1 ? '' : 's'}`, 'bridged');
+  const toolList = tools.length === 0
+    ? '<p>(remote peer advertises no tools)</p>'
+    : `<div class="tools">${tools.map(t => `
+        <div class="tool-row">
+          <span class="tool-bullet"></span><span class="tool-name">${t}</span>
+        </div>`).join('')}</div>`;
+  const webmcpLine = webmcpStatus === 'ok'
+    ? 'Any local Claude with a WebMCP consumer (e.g. the Anthropic Chrome extension) sees the tools below natively.'
+    : 'WebMCP is unavailable in this browser, so external AI clients (Anthropic Chrome extension, hatch) can\'t see the tools — but the in-page chat (bottom-right) still calls them through the same WebRTC connection.';
+  const firstTool = tools[0];
+  const secondTool = tools.length > 1 ? tools[1] : null;
+  main.innerHTML = `
+    <div class="card">
+      <h2>Bridge mounted.</h2>
+      <p>Connected to <code>${site}</code>. ${webmcpLine}</p>
+      ${toolList}
+    </div>
+    <div class="card pip-nudge">
+      <h2>Or chat with a local model here</h2>
+      <p>Open the floating bubble and try ${firstTool ? `<em>/${firstTool}</em>` : '<em>/help</em>'}${secondTool ? ` or <em>/${secondTool}</em>` : ''}, or just chat freely. <a href="https://github.com/nevescloud/pip">Pip</a> runs an open-weights model on this device — no API key, no vendor.</p>
+      <svg class="pip-nudge-arrow" viewBox="0 0 56 56" fill="none"
+           stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M 6 14 Q 28 18, 40 42" stroke-dasharray="4 3"/>
+        <path d="M 40 42 L 30 40 M 40 42 L 38 31"/>
+      </svg>
+    </div>
+  `;
+}
+
+// ── error state ─────────────────────────────────────────────────
+// Reached only when the underlying WebRTC connect/listTools fails —
+// missing WebMCP is no longer fatal (pip works without it).
+function renderError(err) {
+  const msg = String(err.message || err);
+  setStatus('error', 'error');
+  main.innerHTML = `
+    <div class="card error">
+      <h2>Could not connect to the remote tab.</h2>
+      <p><code>${msg}</code></p>
+      <p style="margin-top:0.85rem"><a href="${location.pathname}">try a different site id →</a></p>
+    </div>
+  `;
+}
+
+// ── pip wiring ──────────────────────────────────────────────────
+// Mounts pip with a local in-browser model and a slash command per
+// remote tool that dispatches through `pipClient` over WebRTC. Pip
+// itself never goes through WebMCP — it's a parallel consumer of the
+// same site id, so visitors without a WebMCP-aware browser can still
+// engage with the tools.
+function mountPip(site, pipClient, toolDefs) {
+  // MCP content blocks → chat-friendly text. Used by both the runtime
+  // tool handler (model-driven) and the slash handler (user-driven).
+  // Image/audio come back as huge base64 strings that, if dumped as
+  // JSON, swamp pip's renderer and visually look like nothing happened.
+  function describeContent(blocks) {
+    if (!Array.isArray(blocks) || blocks.length === 0) return '(tool returned no content)';
+    return blocks.map((c) => {
+      if (!c) return '';
+      if (c.type === 'text') return c.text || '';
+      const kb = c.data ? Math.round((c.data.length * 3 / 4) / 1024) : 0;
+      if (c.type === 'image') return `📷 image · ${c.mimeType || 'image/*'} · ~${kb} KB base64`;
+      if (c.type === 'audio') return `🎙️ audio · ${c.mimeType || 'audio/*'} · ~${kb} KB base64`;
+      if (c.type === 'resource_link') return `🔗 ${c.uri || c.url || '(resource_link)'}`;
+      return JSON.stringify(c);
+    }).filter(Boolean).join('\n\n');
+  }
+
+  async function dispatch(name, args) {
+    try {
+      const result = await pipClient.callTool({ name, arguments: args || {} });
+      const summary = describeContent(result?.content);
+      return result?.isError ? `❌ ${summary}` : summary;
+    } catch (err) {
+      return `tool call failed: ${err?.message || err}`;
+    }
+  }
+
+  // Gemma 4 E2B (instruction-tuned) with Google's standardized sampling.
+  // q4f16 over plain q4: smaller download (~1.5 GB decoder vs ~1.9 GB)
+  // and faster on WebGPU since activations stay fp16. temperature=1.0 +
+  // top_k=64 are Gemma 4's documented defaults; no repetition_penalty
+  // per Google. enable_thinking: false suppresses Gemma 4's inline
+  // <|channel>thought blocks that would otherwise leak through the
+  // streamer.
+  const provider = local({
+    model: 'onnx-community/gemma-4-E2B-it-ONNX',
+    dtype: 'q4f16',
+    maxTokens: 1024,
+    genParams: { temperature: 1.0, top_p: 0.95, top_k: 64 },
+    chatTemplate: { enable_thinking: false },
+  });
+
+  const systemPrompt = `You are a local in-browser assistant inside a tab connected to a remote MCP server "${site}". You can call any of the tools below to operate on that remote tab. Prefer using a tool over guessing when the user asks something a tool can answer. Keep replies short.`;
+
+  // pip-core 3.8.0 adds prompt-based tool calling to the local()
+  // provider — when runtime passes `tools`, the system prompt gets
+  // augmented with JSON schemas + emit-format and the streaming parser
+  // catches <tool_call>{…}</tool_call> blocks the model emits, yielding
+  // tool_use events the runtime's loop dispatches. Model-driven tool
+  // calls land via rt.registerTool below; the slash registry below
+  // keeps the deterministic /name dispatch path for users who already
+  // know what they want.
+  const rt = createRuntime({
+    provider,
+    systemPrompt,
+    maxTurns: 4,
+    historyLimit: 12,
+  });
+
+  for (const tool of toolDefs) {
+    rt.registerTool({
+      name: tool.name,
+      description: tool.description || 'remote tool',
+      schema: tool.inputSchema || { type: 'object', properties: {}, required: [] },
+      handler: async (input) => dispatch(tool.name, input),
+    });
+    rt.registerSlash({
+      name: tool.name,
+      description: (tool.description || 'remote tool').slice(0, 80),
+      handler: async () => ({ reply: await dispatch(tool.name, {}) }),
+    });
+  }
+
+  const pip = createPip({
+    introText: `Connected to ${site}. Ask the local model, or run a tool directly with /${toolDefs[0]?.name || 'help'}.`,
+    placeholder: toolDefs[0] ? `Try /${toolDefs[0].name}, or ask the local model…` : 'Ask the local model…',
+    modelLabel: 'gemma-4-E2B-it · q4f16',
+    autoOpen: false,
+    historyLimit: 6,
+    onSubmit:    rt.onSubmit,
+    onSlash:     rt.onSlash,
+    slashSource: rt.slashSource,
+  });
+
+  // Tool-tracing pills — show what the model invoked inline in chat,
+  // so a model-driven call surfaces as a visible artifact and not just
+  // a sentence in the reply.
+  const pills = new Map();
+  rt.on('toolCall', ({ turnEl, name, id }) => {
+    pills.set(id, pip.appendToolPill(turnEl, name, { label: `${name} …` }));
+  });
+  rt.on('toolResult', ({ name, ok, result, error, id }) => {
+    const pill = pills.get(id);
+    pill?.finish({
+      label: `${name}${ok ? '' : ' — failed'}`,
+      result: ok ? result : undefined,
+      error: ok ? undefined : error,
+    });
+    pills.delete(id);
+  });
+
+  // Eager weight download in idle time — provider.warm() shipped in
+  // pip-core 3.9.1. Without this the first message pays the full cold-
+  // start (transformers.js import + tokenizer + ~1.5 GB weights). With
+  // this, the page boots, settles, and starts the download while the
+  // visitor reads the card; first message hits a warm renderer.
+  const warmNow = () => provider.warm?.().catch(() => {});
+  if (typeof requestIdleCallback === 'function') {
+    requestIdleCallback(warmNow, { timeout: 5000 });
+  } else {
+    setTimeout(warmNow, 1500);
+  }
+}
+
+// ── boot ────────────────────────────────────────────────────────
+const { site } = parseHash();
+if (site) {
+  const knockTimer = showConnecting(site);
+
+  // Two parallel paths to the same host:
+  //  - mountBridge: registers tools via navigator.modelContext (WebMCP
+  //    consumers in this browser see them — Anthropic ext, hatch, etc.).
+  //    Fails gracefully on browsers without WebMCP.
+  //  - direct Client over a fresh WebRTC transport: feeds pip's slash
+  //    dispatch. Works in any browser that supports WebRTC + WebGPU.
+  //
+  // Two WebRTC connections to one site id is wasteful; collapsing to
+  // one requires bridge-tab to expose its underlying client — tracked
+  // as a follow-up.
+  let webmcpStatus = 'idle';
+  let bridge = null;
+  let pipClient = null;
+  let toolDefs = [];
+
+  try {
+    // Open the parallel client first so we have tool defs even if the
+    // WebMCP attempt fails.
+    pipClient = new Client(
+      { name: 'mcp-rtc-bridge-page', version: '0.0.1' },
+      { capabilities: {} },
+    );
+    await pipClient.connect(new WebRTCClientTransport({ siteId: site }));
+    const listed = await pipClient.listTools();
+    toolDefs = listed.tools || [];
+
+    // WebMCP path — best-effort.
+    try {
+      bridge = await mountBridge({ siteId: site });
+      webmcpStatus = 'ok';
+    } catch (err) {
+      webmcpStatus = String(err.message || err).includes('navigator.modelContext') ? 'unavailable' : 'failed';
+    }
+
+    clearInterval(knockTimer);
+    renderBridged({
+      site,
+      tools: (bridge?.tools) || toolDefs.map((t) => t.name),
+      webmcpStatus,
+    });
+    mountPip(site, pipClient, toolDefs);
+  } catch (err) {
+    clearInterval(knockTimer);
+    renderError(err);
+  }
+} else {
+  renderEmpty();
+}
+</script>
+</body>
+</html>

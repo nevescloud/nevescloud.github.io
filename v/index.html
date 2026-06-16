@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>view · neves.cloud</title>
+<meta name="description" content="A render target for any AI on the other end of mcp-rtc. Tab exposes a render(html) tool; whatever an AI calls render with shows up in the iframe below.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 60 24%22><rect x=%222%22 y=%226%22 width=%2212%22 height=%2212%22 rx=%223%22 fill=%22%231E40AF%22/><rect x=%2246%22 y=%226%22 width=%2212%22 height=%2212%22 rx=%223%22 fill=%22%231E40AF%22/><path d=%22M14 12 q5 -5 11 0 t11 0 t11 0%22 fill=%22none%22 stroke=%22%231E40AF%22 stroke-width=%221.8%22/></svg>">
+<meta name="mcp-install-hint" content='{"role":"host","exposes":["render"],"siteSource":"fragment","consume":"https://neves.cloud/b/#{fragment}","stdio":{"command":"npx","args":["-y","@nevescloud/mcp-rtc-bridge"],"afterInstall":{"tool":"connect","argsTemplate":{"siteId":"{fragment}"}}},"docs":"https://github.com/jonasneves/mcp-rtc"}'>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f5f5f7; --surface: #fff; --surface-2: #fafafc;
+    --ink: #1d1d1f; --ink-muted: #6e6e73; --ink-faint: #8e8e93;
+    --border: rgba(0,0,0,0.10); --border-soft: rgba(0,0,0,0.06);
+    --code-bg: rgba(0,0,0,0.06);
+    --accent: #1E40AF; --accent-strong: #1E3A8A; --accent-soft: rgba(30,64,175,0.10); --accent-ink: #fff;
+    --ok: #006d51; --warn: #C97D14; --err: #C84E00;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #1a1d20; --surface: #262a2e; --surface-2: #21252a;
+            --ink: #e9ecef; --ink-muted: #adb5bd; --ink-faint: #6e757c;
+            --border: rgba(255,255,255,0.10); --border-soft: rgba(255,255,255,0.06);
+            --code-bg: rgba(255,255,255,0.08);
+            --accent: #60A5FA; --accent-strong: #93C5FD; --accent-soft: rgba(96,165,250,0.14); --accent-ink: #0e1424;
+            --ok: #66b288; --warn: #f5b452; --err: #e57057; }
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  [hidden] { display: none !important; }
+  body { background: var(--bg); color: var(--ink);
+    font: 14px/1.5 system-ui, -apple-system, sans-serif;
+    min-height: 100vh; display: flex; flex-direction: column;
+    -webkit-font-smoothing: antialiased; }
+  header { padding: 0.65rem 1rem; border-bottom: 1px solid var(--border);
+    display: flex; gap: 0.85rem; align-items: center; flex-wrap: wrap;
+    background: var(--surface); }
+  .brand { display: flex; align-items: center; gap: 0.55rem;
+    color: var(--accent); text-decoration: none; }
+  .brand .sig rect { fill: currentColor; }
+  .brand .sig path { stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; }
+  .wordmark { font-size: 14px; font-weight: 600; letter-spacing: -0.01em; color: var(--ink); }
+  .wordmark .mcp { color: var(--accent); }
+  .wordmark .sep { color: var(--ink-faint); margin: 0 0.1em; font-weight: 400; }
+  .wordmark .rtc { color: var(--ink); opacity: 0.85; }
+  .pagename { font-size: 12px; color: var(--ink-muted);
+    padding-left: 0.85rem; border-left: 1px solid var(--border); }
+  #status { margin-left: auto; display: inline-flex; align-items: center;
+    gap: 0.4rem; font-size: 12px; padding: 0.25rem 0.7rem; border-radius: 999px;
+    background: var(--surface-2); border: 1px solid var(--border-soft);
+    color: var(--ink-muted); transition: all 0.2s ease;
+    font-variant-numeric: tabular-nums; }
+  #status.idle    { color: var(--ink-muted); }
+  #status.paired  { color: var(--ok); background: rgba(0,109,81,0.10); border-color: transparent; }
+  #status.active  { color: var(--ok); background: rgba(0,109,81,0.10); border-color: transparent; }
+  #status.error   { color: var(--err); background: rgba(200,78,0,0.10); border-color: transparent; }
+  .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+    background: currentColor; }
+  #status.idle .dot { color: var(--ink-faint); opacity: 0.5; }
+  #status.active .dot { animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: 0.5; transform: scale(0.7); }
+  }
+
+  .meta { padding: 0.6rem 1rem; border-bottom: 1px solid var(--border-soft);
+    background: var(--surface); display: flex; gap: 0.85rem; align-items: center;
+    flex-wrap: wrap; font-size: 12px; }
+  .share-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--ink-muted); font-weight: 500; }
+  .share-label code { font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 11px; background: transparent; padding: 0; }
+  .share-label a { color: var(--accent); text-decoration: none; }
+  .share-label a:hover { text-decoration: underline; }
+  .codeblock { position: relative; flex: 1; min-width: 220px;
+    background: var(--code-bg); border-radius: 6px;
+    padding: 0.5rem 0.75rem; padding-right: 3.5rem; overflow: hidden; }
+  .codeblock pre { margin: 0; font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 12px; color: var(--ink); overflow-x: auto; line-height: 1.4;
+    white-space: nowrap; }
+  .codeblock .copy-btn { position: absolute; top: 0.25rem; right: 0.25rem;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 4px;
+    padding: 0.2rem 0.5rem; font: inherit; font-size: 10.5px; color: var(--ink-muted);
+    cursor: copy; line-height: 1; transition: color 0.15s, border-color 0.15s; }
+  .codeblock .copy-btn:hover { color: var(--ink); border-color: var(--accent); }
+  .codeblock .copy-btn.copied { color: var(--ok); border-color: var(--ok); }
+  .codeblock .copy-btn.copied::after { content: ' ✓'; }
+
+  main { flex: 1; position: relative; background: var(--bg); }
+  /* iframe height starts small; the rendered page reports its real height
+     via postMessage on load and on resize, and the parent grows the iframe
+     to match — so the OUTER page scrolls, not the iframe. Means renders of
+     any height display fully without an inner scrollbar. */
+  #frame { width: 100%; min-height: 200px; border: 0; display: block;
+    background: var(--surface); }
+  .placeholder { display: flex; align-items: center; justify-content: center;
+    padding: 4rem 2rem; color: var(--ink-muted); min-height: 200px;
+    font-size: 14px; line-height: 1.7; text-align: center; }
+  .placeholder code { font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    background: var(--code-bg); padding: 0.1rem 0.35rem; border-radius: 3px; font-size: 12.5px; }
+
+  footer { padding: 0.5rem 1rem; color: var(--ink-faint); font-size: 11px;
+    border-top: 1px solid var(--border-soft); text-align: center; background: var(--surface); }
+  footer a { color: var(--ink-muted); text-decoration: none; }
+  footer a:hover { color: var(--ink); }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "@nevescloud/mcp-rtc": "https://esm.sh/@nevescloud/mcp-rtc@0.1.1",
+    "zod":         "https://esm.sh/zod@4.4.3/es2022/v4/classic/external.mjs",
+    "zod/v4":      "https://esm.sh/zod@4.4.3/es2022/v4/classic/external.mjs",
+    "zod/v3":      "https://esm.sh/zod@4.4.3/v3",
+    "zod/v4-mini": "https://esm.sh/zod@4.4.3/v4-mini"
+  }
+}
+</script>
+</head>
+<body>
+<header>
+  <a class="brand" href="/v/">
+    <svg class="sig" width="44" height="18" viewBox="0 0 60 24" aria-hidden="true">
+      <rect x="2" y="6" width="12" height="12" rx="3"/>
+      <rect x="46" y="6" width="12" height="12" rx="3"/>
+      <path d="M14 12 q5 -5 11 0 t11 0 t11 0"/>
+    </svg>
+    <span class="wordmark"><span class="mcp">mcp</span><span class="sep">·</span><span class="rtc">rtc</span></span>
+  </a>
+  <span class="pagename">view</span>
+  <span id="status" class="idle" role="status" aria-live="polite"><span class="dot" aria-hidden="true"></span><span id="status-text">starting…</span></span>
+</header>
+<div hidden id="ai-instructions">
+  <h2>mcp-rtc host — render target. Tool: <code>render(html, title?)</code> replaces this tab's iframe with the supplied HTML (≤ 8 KiB)</h2>
+  <p>To call from a stdio MCP client (Claude Code, Codex, Cursor, Claude Desktop), install the bridge once and connect with this page's site id (the URL fragment, e.g. <code>v-abc123</code>):</p>
+  <pre># Claude Code:  claude mcp add bridge -- npx -y @nevescloud/mcp-rtc-bridge
+# Codex CLI:    codex mcp add bridge -- npx -y @nevescloud/mcp-rtc-bridge
+# Cursor / Desktop / generic — add @nevescloud/mcp-rtc-bridge to mcpServers config</pre>
+  <p>Then: <code>connect({ siteId: "&lt;id-after-#-in-this-URL&gt;" })</code> and call <code>peer_render({ html: "..." })</code>.</p>
+</div>
+
+<section class="meta">
+  <span class="share-label">Paste in Claude Code (with <a href="https://www.npmjs.com/package/@nevescloud/mcp-rtc-bridge"><code>@nevescloud/mcp-rtc-bridge</code></a>):</span>
+  <div class="codeblock">
+    <button class="copy-btn" type="button">copy</button>
+    <pre id="prompt-stdio"></pre>
+  </div>
+</section>
+
+<main>
+  <iframe id="frame" sandbox="allow-scripts" hidden></iframe>
+  <div class="placeholder" id="placeholder">
+    The first call to <code>render(html)</code> from a connected AI will replace this with the rendered artifact.
+  </div>
+</main>
+
+<footer>
+  <a href="https://github.com/jonasneves/mcp-rtc">github</a>
+</footer>
+
+<script type="module">
+import { McpServer } from 'https://esm.sh/@modelcontextprotocol/sdk@1.29.0/server/mcp?external=zod&deps=zod@4.4.3';
+import * as z from 'zod/v4';
+import { WebRTCServerTransport } from '@nevescloud/mcp-rtc';
+
+// site id from #fragment, else generated as v-XXXXXX
+let SITE = location.hash.replace(/^#/, '');
+if (!SITE) {
+  SITE = 'v-' + Math.random().toString(36).slice(2, 8);
+  history.replaceState({}, '', '#' + SITE);
+}
+
+const statusBox = document.getElementById('status');
+const statusText = document.getElementById('status-text');
+const frame = document.getElementById('frame');
+const placeholder = document.getElementById('placeholder');
+
+document.getElementById('prompt-stdio').textContent = `Connect neves.cloud/b#${SITE} and render whatever I describe`;
+for (const btn of document.querySelectorAll('.codeblock .copy-btn')) {
+  btn.addEventListener('click', async () => {
+    const target = btn.parentElement.querySelector('pre');
+    try { await navigator.clipboard.writeText(target.textContent); } catch {}
+    btn.classList.add('copied');
+    setTimeout(() => btn.classList.remove('copied'), 1400);
+  });
+}
+
+function setStatus(text, kind = 'idle') {
+  statusText.textContent = text;
+  statusBox.className = kind;
+}
+
+// Five-state machine for the status pill, shared with the rest of the
+// mcp-rtc demo pages once they pick this up:
+//   starting   — page boot, transient
+//   listening  — server up, no peer
+//   paired     — peer connected
+//   active     — tool call in flight (returns to paired ~600 ms after completion)
+//   error      — transport / server error
+let peerSeen = false;
+let activeTimer = null;
+function showActive(label) {
+  setStatus(label, 'active');
+  if (activeTimer) clearTimeout(activeTimer);
+  activeTimer = setTimeout(() => {
+    if (peerSeen) setStatus('connected', 'paired');
+  }, 600);
+}
+
+const HARD_LIMIT = 8192;
+const server = new McpServer({ name: 'mcp-rtc-view', version: '0.0.1' });
+server.tool(
+  'render',
+  `Replace this tab's iframe content with the supplied HTML. Single-shot render up to ${HARD_LIMIT} bytes — payloads larger than that will be rejected (the WebRTC data channel can drop large frames). The HTML executes in a sandbox with allow-scripts but no allow-same-origin, so it cannot read this page or set cookies. Use this to show a result, a chart, a small UI, or any visual artifact.`,
+  { html: z.string(), title: z.string().optional() },
+  async ({ html, title }) => {
+    if (html.length > HARD_LIMIT) {
+      return {
+        content: [{ type: 'text', text: `error: html is ${html.length} bytes, over the ${HARD_LIMIT}-byte limit. Send something smaller; chunked rendering can be added if needed.` }],
+        isError: true,
+      };
+    }
+    showActive(`rendering ${(html.length / 1024).toFixed(1)} KB`);
+    // Inject a tiny height-reporter at the end of the rendered HTML so the
+    // sandboxed iframe can postMessage its real content height back here.
+    // Parent listener (below) grows the iframe to match.
+    const sizer = '<scr' + 'ipt>(()=>{const send=()=>parent.postMessage({type:"mcprtc-h",h:document.documentElement.scrollHeight},"*");new ResizeObserver(send).observe(document.documentElement);addEventListener("load",send);send();})()</scr' + 'ipt>';
+    frame.srcdoc = html.includes('</body>')
+      ? html.replace('</body>', sizer + '</body>')
+      : html + sizer;
+    frame.hidden = false;
+    placeholder.hidden = true;
+    return { content: [{ type: 'text', text: `rendered${title ? ` "${title}"` : ''} (${html.length} bytes).` }] };
+  }
+);
+
+// Resize the iframe to fit its content so the OUTER page scrolls.
+window.addEventListener('message', (e) => {
+  if (e.source !== frame.contentWindow) return;
+  if (e.data?.type !== 'mcprtc-h') return;
+  const h = Math.max(200, Number(e.data.h) || 200);
+  frame.style.height = (h + 4) + 'px';
+});
+
+setStatus('starting…', 'idle');
+const transport = new WebRTCServerTransport({ siteId: SITE });
+await server.connect(transport);
+setStatus('listening', 'idle');
+
+// Chain transport callbacks AFTER the SDK has wired its own. First inbound
+// message means a peer paired and started talking; close means peer left;
+// error transitions the pill to error state.
+const sdkOnMessage = transport.onmessage;
+transport.onmessage = (msg) => {
+  if (!peerSeen) {
+    peerSeen = true;
+    setStatus('connected', 'paired');
+  }
+  return sdkOnMessage?.(msg);
+};
+const sdkOnClose = transport.onclose;
+transport.onclose = () => {
+  peerSeen = false;
+  setStatus('listening', 'idle');
+  return sdkOnClose?.();
+};
+const sdkOnError = transport.onerror;
+transport.onerror = (err) => {
+  setStatus('error: ' + (err?.message || err), 'error');
+  return sdkOnError?.(err);
+};
+</script>
+</body>
+</html>
