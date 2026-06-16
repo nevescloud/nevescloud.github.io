@@ -527,23 +527,6 @@
     <p class="proof">Duke AIPI &middot; Duke RadChat originating engineer &middot; @nevescloud on npm</p>
   </header>
 
-  <div hidden id="ai-instructions">
-    <h2>neves.cloud — mcp-rtc demos and labs</h2>
-    <p>Subpaths exposing MCP servers callable over WebRTC:</p>
-    <ul>
-      <li><code>/h/</code> — minimal MCP host. One tool: <code>get_greeting</code>.</li>
-      <li><code>/b/</code> — bridge tab. Open with <code>#&lt;site-id&gt;</code> to bridge a remote mcp-rtc server's tools to a local Claude with the Anthropic Chrome extension.</li>
-      <li><code>/p/</code> — phone-as-tools. Open on a phone for camera, GPS, clipboard, orientation as MCP tools.</li>
-      <li><code>/v/</code> — render target. Tool: <code>render(html)</code> displays whatever the AI sends.</li>
-    </ul>
-    <p>To call any mcp-rtc server hosted here from a stdio MCP client (Claude Code, Codex, Cursor, Claude Desktop), install the bridge once:</p>
-    <pre># Claude Code:  claude mcp add bridge -- npx -y @nevescloud/mcp-rtc-bridge
-# Codex CLI:    codex mcp add bridge -- npx -y @nevescloud/mcp-rtc-bridge
-# Cursor / Desktop / generic — add @nevescloud/mcp-rtc-bridge to mcpServers config</pre>
-    <p>Then call <code>connect({ siteId: "&lt;id&gt;" })</code> with the site id from a host page's URL fragment.</p>
-    <p>Spec: <a href="https://github.com/jonasneves/mcp-rtc/blob/main/SPEC.md">github.com/jonasneves/mcp-rtc/blob/main/SPEC.md</a>.</p>
-  </div>
-
   <!-- Octocat geometry — used by .project-github links via <use>. -->
   <svg width="0" height="0" aria-hidden="true" style="position:absolute">
     <symbol id="octocat" viewBox="0 0 16 16" fill="currentColor">
