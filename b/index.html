@@ -376,7 +376,7 @@ function renderEmpty() {
       <p>Two ways to use the tools, on this same page:</p>
       <ul style="margin: 0.4rem 0 0.4rem 1.2rem; padding: 0;">
         <li><strong>WebMCP path</strong> — Chrome 146+ with a WebMCP consumer attached (e.g. the Anthropic Claude extension). Your local Claude calls the remote tools natively.</li>
-        <li><strong>In-page chat</strong> — a floating chat bubble with a local open-weights model (via <a href="https://github.com/nevescloud/pip">pip</a> + transformers.js + WebGPU). No API key, no vendor; works in any modern browser with WebGPU.</li>
+        <li><strong>In-page chat</strong> — a floating chat bubble with a local open-weights model (via <a href="https://www.npmjs.com/package/@nevescloud/pip">pip</a> + transformers.js + WebGPU). No API key, no vendor; works in any modern browser with WebGPU.</li>
       </ul>
       <p>Try a working demo: <a href="/h/">open a host</a>, copy the site id, paste it above.</p>
     </div>
@@ -447,7 +447,7 @@ function renderBridged({ site, tools, webmcpStatus }) {
     </div>
     <div class="card pip-nudge">
       <h2>Or chat with a local model here</h2>
-      <p>Open the floating bubble and try ${firstTool ? `<em>/${firstTool}</em>` : '<em>/help</em>'}${secondTool ? ` or <em>/${secondTool}</em>` : ''}, or just chat freely. <a href="https://github.com/nevescloud/pip">Pip</a> runs an open-weights model on this device — no API key, no vendor.</p>
+      <p>Open the floating bubble and try ${firstTool ? `<em>/${firstTool}</em>` : '<em>/help</em>'}${secondTool ? ` or <em>/${secondTool}</em>` : ''}, or just chat freely. <a href="https://www.npmjs.com/package/@nevescloud/pip">Pip</a> runs an open-weights model on this device — no API key, no vendor.</p>
       <svg class="pip-nudge-arrow" viewBox="0 0 56 56" fill="none"
            stroke="currentColor" stroke-width="2"
            stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
