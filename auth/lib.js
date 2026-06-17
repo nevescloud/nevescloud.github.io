@@ -5,7 +5,7 @@
 // Storage shape matches pip-auth so this and pip-auth can co-exist on the same
 // page without conflict.
 //
-// Auth mechanism: GitHub OAuth **Device Flow** (same as ccw) — no redirect_uri,
+// Auth mechanism: GitHub OAuth **Device Flow** (same as opal) — no redirect_uri,
 // no callback surface, no client secret, so GitHub's "redirect_uri not associated"
 // error class can't occur. GitHub's two device endpoints send no CORS headers,
 // so they route through the proxy.neevs.io CORS shim (a pure passthrough that
@@ -52,7 +52,7 @@ export async function getSession({ verify = true } = {}) {
   }
 }
 
-// GitHub OAuth Device Flow (mirrors ccw/docs/device-auth.js). Contract is
+// GitHub OAuth Device Flow (mirrors opal/docs/device-auth.js). Contract is
 // unchanged from the old popup flow: resolves { token, username, avatarUrl } and
 // writes the shared session, or rejects with a human message on denial / timeout
 // / cancel — so existing `await signIn()` callers need no change. `app` is kept
