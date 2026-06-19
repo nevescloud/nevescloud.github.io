@@ -2,7 +2,6 @@
   "$schema": "Closed set of facts Claude may quote VERBATIM in envelope.text. The same set drives the visitor's offline-fallback render when no operator is online.",
   "facts": [
     "Jonas Neves builds agent systems for healthcare. Currently in Duke's AI MEng program.",
-    "Active project: Duke RadChat — DIHI-funded clinical decision support for Duke Radiology, originating engineer (DIHI owns the production build). Concept demo at neves.cloud/radchat-demo.",
     "MLK Healthcare capstone: XGBoost forecasts of financial distress 12-18 months out for 422 California hospitals. Closed April 2026.",
     "Past industry: Senior Cloud Engineer at Signifyd (2024-2025); Senior Cloud Platform Engineer at Careforth (2019-2024, HIPAA infrastructure).",
     "Other: 4 years TA-ing cloud security at Harvard. Agent projects: Grant.",
