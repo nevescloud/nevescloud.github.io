@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- neves.cloud app icon — the Pip mark in its cool monochrome dress:
+       near-white Pip (#ecedf1) on a cool near-black ground (#1c1d21),
+       sampled from the source art. Pip is the pip-core Lucide-bot in its
+       idle pose — left-pointing antenna (antenna-l), eyes open — drawn thick.
+       Apple-icon polish: superellipse-leaning corner (rx 56 ≈ 22%), subtle
+       135deg ground, top sheen, hairline inner edge. -->
+  <defs>
+    <linearGradient id="ground" x1="0" y1="0" x2="256" y2="256" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#23242a"/>
+      <stop offset="1" stop-color="#141519"/>
+    </linearGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="256" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.08"/>
+      <stop offset="0.55" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="256" height="256" rx="56" fill="url(#ground)"/>
+  <rect width="256" height="256" rx="56" fill="url(#sheen)"/>
+  <rect x="1.5" y="1.5" width="253" height="253" rx="54.5" fill="none" stroke="#ffffff" stroke-opacity="0.10" stroke-width="2"/>
+
+  <!-- Pip (native 24x24), idle pose: antenna-l points up-then-left. Thick. -->
+  <g transform="translate(50,50) scale(6.5)" fill="none" stroke="#ecedf1"
+     stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 8V4H8"/>
+    <rect width="16" height="12" x="4" y="8" rx="2"/>
+    <path d="M2 14h2"/>
+    <path d="M20 14h2"/>
+    <path d="M9 13v2"/>
+    <path d="M15 13v2"/>
+  </g>
+</svg>

@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1a1d20" media="(prefers-color-scheme: dark)">
+  <meta name="robots" content="noindex,nofollow">
+  <title>repos · neves.cloud</title>
+  <link rel="icon" type="image/svg+xml" href="../icon.svg">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      color-scheme: light dark;
+      --bg: #f5f5f7;
+      --surface: #ffffff;
+      --ink: #1d1d1f;
+      --ink-muted: #6e6e73;
+      --border-subtle:  rgba(0,0,0,0.06);
+      --border-default: rgba(0,0,0,0.10);
+      --border-strong:  rgba(0,0,0,0.18);
+      --accent: #006d51;
+      --brand-heading: #00563f;
+      --punct: #E89923;
+      --radius: 8px;
+      --ease: cubic-bezier(0.25, 0.8, 0.25, 1);
+      --t-display: 1.75rem;
+      --t-body:    0.9375rem;
+      --t-caption: 0.75rem;
+      --t-micro:   0.6875rem;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1a1d20;
+        --surface: #262a2e;
+        --ink: #e9ecef;
+        --ink-muted: #adb5bd;
+        --border-subtle:  rgba(255,255,255,0.06);
+        --border-default: rgba(255,255,255,0.10);
+        --border-strong:  rgba(255,255,255,0.18);
+        --accent: #66b288;
+        --brand-heading: #54a679;
+      }
+    }
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", ui-sans-serif, sans-serif;
+      line-height: 1.5;
+      font-synthesis: none;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      min-height: 100svh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 3rem 1.5rem;
+      gap: 2rem;
+    }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    header {
+      width: 100%;
+      max-width: 960px;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      animation: fade-up 0.5s var(--ease) both;
+    }
+    .back {
+      font-size: var(--t-caption);
+      color: var(--ink-muted);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      transition: color 0.15s var(--ease);
+      width: fit-content;
+    }
+    .back:hover { color: var(--ink); }
+    .page-title {
+      font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Helvetica Neue", ui-sans-serif, sans-serif;
+      font-size: 1.25rem;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      color: var(--ink);
+      font-weight: 600;
+    }
+
+    main {
+      width: 100%;
+      max-width: 960px;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      animation: fade-up 0.5s 0.1s var(--ease) both;
+    }
+
+    #search {
+      width: 100%;
+      background: none;
+      border: none;
+      border-bottom: 1px solid var(--border-default);
+      color: var(--ink);
+      font-family: inherit;
+      font-size: var(--t-body);
+      padding: 0.5rem 0 0.625rem;
+      outline: none;
+      caret-color: var(--accent);
+      transition: border-color 0.15s var(--ease);
+    }
+    #search:focus { border-bottom-color: var(--accent); }
+    #search::placeholder { color: var(--ink-muted); opacity: 0.6; }
+
+    #show-all {
+      background: none;
+      border: none;
+      color: var(--ink-muted);
+      font: inherit;
+      font-size: var(--t-caption);
+      padding: 0.5rem 0.625rem;
+      cursor: pointer;
+      opacity: 0.7;
+      transition: opacity 0.15s var(--ease);
+      align-self: flex-start;
+    }
+    #show-all:hover { opacity: 1; }
+
+    .hint {
+      font-size: var(--t-caption);
+      color: var(--ink-muted);
+      opacity: 0.7;
+      padding: 0.625rem 0.625rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    #list {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.5rem;
+    }
+    #list:empty { display: none; }
+    @media (max-width: 800px) { #list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 500px) { #list { grid-template-columns: 1fr; } }
+
+    .project-card {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.25rem;
+      border-radius: var(--radius);
+      border: 1px solid var(--border-default);
+      background: var(--surface);
+      text-decoration: none;
+      color: inherit;
+      transition: border-color 0.18s var(--ease), background 0.18s var(--ease), transform 0.18s var(--ease);
+    }
+    .project-link { position: absolute; inset: 0; z-index: 1; border-radius: inherit; }
+    .project-github {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      z-index: 2;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
+      color: var(--ink-muted);
+      transition: color 0.15s var(--ease), background 0.15s var(--ease);
+    }
+    .project-github:hover { color: var(--ink); background: color-mix(in srgb, var(--ink) 8%, transparent); }
+    .project-github svg { display: block; }
+    @media (hover: hover) {
+      .project-card:hover { border-color: var(--border-strong); transform: translateY(-1px); }
+    }
+    .project-card:active { background: color-mix(in srgb, var(--ink) 5%, var(--surface)); }
+    .project-info {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      align-self: stretch;
+      gap: 0.25rem;
+      flex: 1;
+      min-width: 0;
+      pointer-events: none;
+    }
+    .project-name {
+      font-size: var(--t-body);
+      font-weight: 600;
+      color: var(--ink);
+      letter-spacing: -0.01em;
+    }
+    .project-desc {
+      font-size: var(--t-caption);
+      color: var(--ink-muted);
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .project-topics {
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 4px;
+      margin-top: 6px;
+      overflow: hidden;
+      mask-image: linear-gradient(to right, black calc(100% - 12px), transparent 100%);
+      -webkit-mask-image: linear-gradient(to right, black calc(100% - 12px), transparent 100%);
+    }
+    .project-topic {
+      flex-shrink: 0;
+      font-size: var(--t-micro);
+      color: var(--ink-muted);
+      border: 1px solid var(--border-subtle);
+      border-radius: 3px;
+      padding: 1px 6px;
+      white-space: nowrap;
+      letter-spacing: 0.01em;
+    }
+    .project-card.selected {
+      border-color: var(--border-strong);
+      background: color-mix(in srgb, var(--ink) 4%, var(--surface));
+      box-shadow: inset 2px 0 0 var(--accent);
+    }
+    .project-card[data-private="true"] .project-name::after {
+      content: ' · private';
+      font-size: 0.7em;
+      font-weight: 400;
+      color: var(--ink-muted);
+    }
+
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <a class="back" href="../">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M9.5 6H2.5M2.5 6L5.5 3M2.5 6L5.5 9"/>
+      </svg>
+      neves.cloud
+    </a>
+    <h1 class="page-title">Repos</h1>
+  </header>
+
+  <main>
+    <input id="search" type="text" autocomplete="off" spellcheck="false" placeholder="filter repos…">
+    <div id="list"></div>
+    <button id="show-all" type="button" hidden>show all</button>
+    <p id="hint" class="hint" hidden>loading…</p>
+  </main>
+
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="octocat" viewBox="0 0 16 16">
+      <path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+    </symbol>
+  </svg>
+
+  <script type="module">
+  // Owner-only browse view of jonasneves's repos. Auth lives in
+  // localStorage under __neevs_auth (set by the landing page's signin
+  // flow). No-token or wrong-username bounces back to the landing page.
+  // Repo cache shares the landing page's authed-cache key so navigating
+  // here from a recent landing-page visit doesn't refetch.
+  const AUTH_KEY = '__neevs_auth';
+  const REPOS_CACHE_KEY = '__neevs_repos_cache_authed';
+  const CACHE_TTL = 2 * 60 * 1000;
+
+  let auth;
+  try { auth = JSON.parse(localStorage.getItem(AUTH_KEY)); } catch {}
+  if (!auth?.token || auth.username !== 'jonasneves') { location.href = '../'; }
+
+  const $ = (id) => document.getElementById(id);
+  const search = $('search');
+  const list = $('list');
+  const hint = $('hint');
+  const showAllBtn = $('show-all');
+
+  function escHtml(s) {
+    return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function cacheGet(key) {
+    try {
+      const e = JSON.parse(sessionStorage.getItem(key));
+      if (e && Date.now() - e.ts < CACHE_TTL) return e.data;
+    } catch {}
+    return null;
+  }
+  function cacheSet(key, data) {
+    try { sessionStorage.setItem(key, JSON.stringify({ ts: Date.now(), data })); } catch {}
+  }
+
+  let _repos = null;
+  let _hideFromRepos = new Set();
+  let _selIdx = -1;
+  let _showAll = false;
+  const PREVIEW_N = 5;
+
+  async function load() {
+    const cached = cacheGet(REPOS_CACHE_KEY);
+    if (cached) {
+      _repos = cached;
+    } else {
+      try {
+        const res = await fetch('https://api.github.com/user/repos?per_page=100&sort=updated&affiliation=owner', {
+          headers: { Authorization: `Bearer ${auth.token}`, Accept: 'application/vnd.github+json' }
+        });
+        if (!res.ok) { hint.textContent = 'failed to load.'; return; }
+        _repos = await res.json();
+        _repos = _repos.filter(r => !r.archived);
+        cacheSet(REPOS_CACHE_KEY, _repos);
+      } catch { _repos = []; }
+    }
+    try {
+      const res = await fetch('../data/projects.json?t=' + Date.now(), { cache: 'no-store' });
+      if (res.ok) {
+        const j = await res.json();
+        _hideFromRepos = new Set(j?.hide_from_repos || []);
+      }
+    } catch {}
+    render();
+  }
+
+  function updateSelected() {
+    const items = list.querySelectorAll('.project-card');
+    items.forEach((el, i) => el.classList.toggle('selected', i === _selIdx));
+    if (_selIdx >= 0 && items[_selIdx]) items[_selIdx].scrollIntoView({ block: 'nearest' });
+  }
+
+  function render() {
+    const q = search.value.toLowerCase().trim();
+    const base = (_repos || []).filter(r => !_hideFromRepos.has(`${r.owner.login}/${r.name}`));
+    const collapsed = !q && !_showAll;
+    let items = q
+      ? base.filter(r => r.name.toLowerCase().includes(q) || (r.description||'').toLowerCase().includes(q))
+      : base;
+    if (collapsed) items = items.slice(0, PREVIEW_N);
+    list.innerHTML = items.length
+      ? items.map(r => {
+          const href = r.homepage || r.html_url;
+          const showRepoIcon = r.homepage && r.homepage !== r.html_url;
+          const topics = (r.topics || []).slice(0, 4);
+          return `
+          <div class="project-card"${r.private ? ' data-private="true"' : ''}>
+            <a class="project-link" href="${escHtml(href)}" target="_blank" rel="noopener" aria-label="${escHtml(r.name)}"></a>
+            <div class="project-info">
+              <span class="project-name">${escHtml(r.name)}</span>
+              ${r.description ? `<span class="project-desc">${escHtml(r.description)}</span>` : ''}
+              ${topics.length ? `<div class="project-topics">${topics.map(t => `<span class="project-topic">${escHtml(t)}</span>`).join('')}</div>` : ''}
+            </div>
+            ${showRepoIcon ? `<a class="project-github" href="${escHtml(r.html_url)}" target="_blank" rel="noopener" aria-label="${escHtml(r.name)} on GitHub"><svg width="16" height="16" aria-hidden="true"><use href="#octocat"/></svg></a>` : ''}
+          </div>`;
+        }).join('')
+      : '';
+
+    if (items.length === 0) {
+      hint.textContent = q ? `no matches for \u201C${q}\u201D` : (_repos ? 'nothing to show.' : 'loading\u2026');
+      hint.hidden = false;
+    } else {
+      hint.hidden = true;
+    }
+
+    _selIdx = (q && items.length > 0) ? 0 : -1;
+    updateSelected();
+
+    if (showAllBtn) {
+      showAllBtn.textContent = _showAll ? 'show fewer' : 'show all';
+      showAllBtn.hidden = !!q || base.length <= PREVIEW_N;
+    }
+  }
+
+  if (showAllBtn) {
+    showAllBtn.addEventListener('click', () => {
+      _showAll = !_showAll;
+      render();
+    });
+  }
+
+  search.addEventListener('input', render);
+  search.addEventListener('keydown', (e) => {
+    const items = list.querySelectorAll('.project-card');
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (items.length === 0) return;
+      _selIdx = Math.min(_selIdx + 1, items.length - 1);
+      updateSelected();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      _selIdx = Math.max(_selIdx - 1, 0);
+      updateSelected();
+    } else if (e.key === 'Enter') {
+      if (_selIdx >= 0 && items[_selIdx]) {
+        e.preventDefault();
+        const link = items[_selIdx].querySelector('.project-link');
+        if (link) link.click();
+      }
+    } else if (e.key === 'Escape') {
+      if (search.value) {
+        e.preventDefault();
+        search.value = '';
+        render();
+      }
+    }
+  });
+
+  // Visiting this page implies "I want to find a repo" — hand the
+  // visitor a typing-ready search field on arrival.
+  search.focus();
+  load();
+  </script>
+</body>
+</html>
