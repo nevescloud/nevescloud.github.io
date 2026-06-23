@@ -5,15 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
   <title>Not found — neves.cloud</title>
-  <script>
-    // Cuko moved to its own subdomain. Forward any legacy /cuko or /cuko/* path
-    // (incl. the released extension's /cuko/remote/ QR target) to the new home,
-    // preserving the rest of the path + query + hash. Runs first, before render.
-    (function () {
-      var m = location.pathname.match(/^\/cuko(?:\/(.*))?$/);
-      if (m) location.replace('https://cuko.neves.cloud/' + (m[1] || '') + location.search + location.hash);
-    })();
-  </script>
+  <!-- Forward any legacy /<slug> or /<slug>/* path (e.g. the cuko extension's
+       /cuko/remote/ QR target) to its subdomain. Runs first, before render. -->
+  <script src="/redirects.js"></script>
   <link rel="icon" type="image/svg+xml" href="/icon.svg">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
