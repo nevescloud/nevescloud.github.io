@@ -24,6 +24,8 @@ git archive main | tar -x -C "$WT"
 for f in "${META[@]}"; do rm -f "$WT/$f"; done
 
 git -C "$WT" add -A
+# `**/.*` in the global gitignore makes `add -A` skip dotfiles; .nojekyll must ship
+[ -f "$WT/.nojekyll" ] && git -C "$WT" add -f .nojekyll
 if git -C "$WT" diff --cached --quiet; then
   echo "gh-pages already matches main ($SRC) — nothing to publish"
   exit 0
