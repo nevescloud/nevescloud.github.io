@@ -1134,14 +1134,12 @@
     actions.className = 'project-actions';
     card.appendChild(actions);
 
-    // Chrome Web Store icon — a direct install shortcut, shown only when
-    // the card's primary link doesn't already land on the store. Mirrors
-    // the GitHub-icon rule: a secondary link earns its place only when it
-    // reaches a destination the primary click doesn't. So a card that
-    // links straight to the store (CanvasFlow, TapTo) gets no icon — it'd
-    // duplicate the primary action — while one that links to a chooser
-    // page (Cuko → /cuko) gets a shortcut past it.
-    if (entry.webstore && entry.href !== entry.webstore) {
+    // Chrome Web Store icon — an availability badge: it marks the project
+    // as published to the store, so it shows whenever a listing exists,
+    // even when the card's primary link already goes there. (Unlike the
+    // GitHub icon, which is a secondary-destination affordance gated on
+    // the primary link pointing elsewhere.)
+    if (entry.webstore) {
       const cw = document.createElement('a');
       cw.className = 'project-store';
       cw.href = entry.webstore;
