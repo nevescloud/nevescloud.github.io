@@ -314,6 +314,59 @@
       letter-spacing: 0.01em;
     }
 
+    /* ── Theme filter bar ──────────────────────────────────────────── */
+    /* Clickable theme pills above the grid — a single-axis slice for a
+       cold visitor (agentic / robotics / vision / …). Themes come from
+       projects.json; a card carries its set in data-themes. `hidden` on
+       the container until JS populates it, so no-JS / pre-render shows
+       nothing rather than an empty bar. */
+    .project-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 1rem;
+    }
+    .filter-pill {
+      font-family: "SF Mono", ui-monospace, Menlo, monospace;
+      font-size: var(--t-micro);
+      letter-spacing: 0.04em;
+      color: var(--ink-muted);
+      background: var(--surface);
+      border: 1px solid var(--border-default);
+      border-radius: 999px;
+      padding: 3px 11px;
+      cursor: pointer;
+      transition: color 0.15s var(--ease), border-color 0.15s var(--ease), background 0.15s var(--ease);
+    }
+    @media (hover: hover) {
+      .filter-pill:hover { color: var(--ink); border-color: var(--border-strong); }
+    }
+    .filter-pill:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+    /* Active pill — the accent fill marks the live filter; aria-pressed
+       carries the same state for AT. */
+    .filter-pill[aria-pressed="true"] {
+      color: var(--bg);
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+    /* Filtered-out cards leave the grid flow entirely so the remaining
+       cards reflow (and the :has(.is-featured) layout still keys off
+       DOM presence, not display). */
+    .project-card.filtered-out { display: none; }
+
+    .sr-only {
+      position: absolute;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
     /* ── Visibility (owner-only surfaces) ──────────────────────────── */
     /* Private rows stay fully legible (the owner is the audience that
        needs to act on them); a dashed border carries the "provisional"
@@ -615,7 +668,9 @@
 
   <main>
     <section class="projects" aria-label="Projects">
+      <div class="project-filters" role="group" aria-label="Filter projects by theme" hidden></div>
       <div class="projects-grid"></div>
+      <p class="sr-only" role="status" aria-live="polite"></p>
     </section>
   </main>
 
@@ -1077,6 +1132,10 @@
     card.dataset.repo = entry.repo;
     if (entry.pinId) card.dataset.pinId = entry.pinId;
     if (entry.public) card.dataset.public = 'true';
+    if (Array.isArray(entry.themes) && entry.themes.length) {
+      // Pipe-joined so a substring match can't cross theme boundaries.
+      card.dataset.themes = '|' + entry.themes.join('|') + '|';
+    }
 
     let link = null;
     if (entry.href) {
@@ -1183,6 +1242,57 @@
     for (const entry of (data.visible || [])) {
       grid.appendChild(buildProjectCard(entry, false));
     }
+    setupThemeFilters();
+  }
+
+  // Theme filter bar. Builds one pill per theme present (in a fixed
+  // display order), plus a leading "All". Clicking a pill hides cards
+  // whose data-themes lacks it; "All" clears. Single-axis slice — see
+  // projects.json's `themes` field.
+  const THEME_ORDER = ['agentic', 'robotics', 'vision', 'learning', 'extension'];
+  function setupThemeFilters() {
+    const bar = document.querySelector('.project-filters');
+    const status = document.querySelector('.projects .sr-only[role="status"]');
+    if (!bar) return;
+    const present = new Set();
+    document.querySelectorAll('.project-card').forEach(c =>
+      (c.dataset.themes || '').split('|').filter(Boolean).forEach(t => present.add(t)));
+    const themes = THEME_ORDER.filter(t => present.has(t));
+    // Need ≥2 themes for filtering to mean anything.
+    if (themes.length < 2) { bar.hidden = true; return; }
+
+    const makePill = (value, label) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'filter-pill';
+      b.dataset.theme = value;
+      b.textContent = label;
+      b.setAttribute('aria-pressed', value === 'all' ? 'true' : 'false');
+      return b;
+    };
+    bar.appendChild(makePill('all', 'All'));
+    themes.forEach(t => bar.appendChild(makePill(t, t[0].toUpperCase() + t.slice(1))));
+    bar.hidden = false;
+
+    function apply(theme) {
+      let shown = 0;
+      document.querySelectorAll('.project-card').forEach(c => {
+        const match = theme === 'all' || (c.dataset.themes || '').includes('|' + theme + '|');
+        c.classList.toggle('filtered-out', !match);
+        if (match) shown++;
+      });
+      bar.querySelectorAll('.filter-pill').forEach(p =>
+        p.setAttribute('aria-pressed', p.dataset.theme === theme ? 'true' : 'false'));
+      if (status) {
+        const label = theme === 'all' ? 'all themes' : theme;
+        status.textContent = `Showing ${shown} project${shown === 1 ? '' : 's'} — ${label}.`;
+      }
+    }
+    bar.addEventListener('click', (e) => {
+      const pill = e.target.closest('.filter-pill');
+      if (!pill) return;
+      apply(pill.dataset.theme);
+    });
   }
   const _renderPromise = applyProjectsCuration();
 
