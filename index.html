@@ -779,7 +779,7 @@
   // no operator-state shaping the page. `live` stays available via
   // /model live for owner demos and as a stepping stone toward a
   // dedicated Pip-relay demo page where the operator story is the point.
-  const DEFAULT_MODEL_KEY = "lfm-nano";
+  const DEFAULT_MODEL_KEY = "lfm-tiny";
   let currentModelKey = localStorage.getItem(MODEL_STORAGE_KEY);
   // Pre-rename localStorage values map to the new key so returning
   // visitors don't get bounced back to the default.
@@ -794,12 +794,24 @@
   // first visit before the dashboard has ever been reached. The
   // dashboard's pushed manifest overrides at runtime.
   const FALLBACK_MANIFEST = {
+    // One concrete line per headline project: a small local model invents
+    // when the facts are sparse, so naming each project is what keeps the
+    // offline answers grounded (tuned against LFM2.5 350M — see the
+    // window.neevsChat debug bridge below). The dashboard overrides this
+    // with a richer manifest when an operator is online.
     facts: [
-      'neves.cloud is a portfolio of agentic-systems demos and labs by Jonas Neves.',
-      'Demos are interactive prototypes (TallyHo, CatWatcher). Labs are reusable tools and components (Pip, Better Robotics, CanvasFlow).',
-      'Built and maintained by Jonas Neves. For bio, resume, and contact, see jonasneves.com.',
+      'neves.cloud is a portfolio of browser-native agentic-systems demos and labs by Jonas Neves.',
+      'Everything here is free to try right in the browser, with no signup or install.',
+      'OPAL drives agentic Claude Code from any browser over WebRTC, with no relay or install.',
+      'CatWatcher is a vision agent that identifies cats by name using an in-browser model plus Claude.',
+      'TallyHo keeps shelf inventory from a phone camera using a vision model plus Claude.',
+      'Cuko turns any web page into predict-then-reveal study, and also has a Chrome extension.',
+      'CanvasFlow adds AI assistance and schedule planning inside Canvas LMS.',
+      'Better Robotics teaches robotics in the browser, pairing an ESP32 or Raspberry Pi over Bluetooth.',
+      'Pip is the assistant bubble you are chatting through right now; it embeds in any website.',
+      'For Jonas Neves bio, resume, and contact, see jonasneves.com.',
     ],
-    decline: "I'm not sure — try the project cards above, or see jonasneves.com for more about Jonas.",
+    decline: "I don't have that detail — try the project cards above, or jonasneves.com.",
   };
   let MANIFEST = FALLBACK_MANIFEST;
   // The operator panel lives in the page's other <script type="module">
@@ -821,22 +833,36 @@
   }
   syncRenderer();
 
-  async function renderOffline({ manifest, message }, ctx) {
+  // System prompt for the offline path, factored out so the debug bridge
+  // (window.neevsChat) can read and override it live while tuning the
+  // small local model — overrides persist in localStorage (this browser
+  // only) and fill {{facts}} / {{decline}} from the active manifest.
+  const PROMPT_OVERRIDE_KEY = '__neevs_prompt';
+  function buildSystemPrompt(manifest) {
     manifest = manifest || FALLBACK_MANIFEST;
     const facts = manifest.facts || [];
     const decline = manifest.decline || "Not sure — Jonas would know better.";
+    const factBlock = facts.map((f) => `- ${f}`).join('\n');
+    let override = null;
+    try { override = localStorage.getItem(PROMPT_OVERRIDE_KEY); } catch {}
+    if (override) {
+      return override.replace(/\{\{facts\}\}/g, factBlock).replace(/\{\{decline\}\}/g, decline);
+    }
     const sysLines = [
-      `You are the voice of ${location.host}. Answer in 1-2 sentences using ONLY the facts below. Never invent.`,
-      'If a question isn\u2019t covered, say so in one line. Greet back without volunteering a bio.',
+      `You are the assistant on the website ${location.host}. Answer ONLY from the facts below, then stop. Keep every reply to one or two short sentences and never add detail that is not in the facts. If the facts do not cover the question, say you don't have that detail and point to the project cards above or jonasneves.com. Never guess. You are the site's assistant, not a person; never say "I am Jonas".`,
       '',
       'Facts:',
-      ...facts.map((f) => `- ${f}`),
+      factBlock,
       '',
-      `If you don\u2019t know: ${decline}`,
+      `If the facts don't cover it: ${decline}`,
     ];
+    return sysLines.join('\n');
+  }
+
+  async function renderOffline({ manifest, message }, ctx) {
     return renderer.generate({
       messages: [
-        { role: 'system', content: sysLines.join('\n') },
+        { role: 'system', content: buildSystemPrompt(manifest || FALLBACK_MANIFEST) },
         { role: 'user',   content: message },
       ],
       turnEl: ctx.turnEl,
@@ -844,6 +870,36 @@
       signal: ctx.signal,
     });
   }
+
+  // ── Debug bridge ────────────────────────────────────────────────────
+  // A stable, permanent handle for tuning the in-browser assistant from
+  // the console or an automation session - no edit+reload loop. Entirely
+  // client-side and inert for visitors: nothing reads window.neevsChat
+  // unless explicitly called, and any prompt override lives only in this
+  // browser's localStorage (never shipped). Safe in prod - there are no
+  // secrets, and a visitor can already run the model themselves.
+  //   neevsChat.ask('hello')             -> full offline path (honors override)
+  //   neevsChat.gen('hi', '<system>')    -> one-shot with an explicit prompt
+  //   neevsChat.prompt()                 -> the effective system prompt
+  //   neevsChat.setSystemPrompt(tpl)     -> live override ({{facts}}/{{decline}})
+  //   neevsChat.clearSystemPrompt()      -> back to the shipped default
+  //   neevsChat.setModel('lfm-thinking') -> switch local model
+  window.neevsChat = {
+    renderer,
+    get model() { return { key: currentModelKey, ...MODELS[currentModelKey] }; },
+    setModel: (k) => { if (MODELS[k]) { currentModelKey = k; syncRenderer(); } return currentModelKey; },
+    prompt: (manifest = MANIFEST) => buildSystemPrompt(manifest),
+    setSystemPrompt: (tpl) => { try { localStorage.setItem(PROMPT_OVERRIDE_KEY, tpl); } catch {} return 'override set'; },
+    clearSystemPrompt: () => { try { localStorage.removeItem(PROMPT_OVERRIDE_KEY); } catch {} return 'override cleared'; },
+    gen: (user, sys) => renderer.generate({
+      messages: [
+        { role: 'system', content: sys != null ? sys : buildSystemPrompt(MANIFEST) },
+        { role: 'user',   content: user },
+      ],
+      setReplyText: () => {},
+    }),
+    ask: (user) => renderOffline({ manifest: MANIFEST, message: user }, { setReplyText: () => {} }),
+  };
 
   // Forward-declared so onUnprompted can call back into Pip after pip is
   // assigned below. createRelayProvider's hooks are invoked lazily (on
