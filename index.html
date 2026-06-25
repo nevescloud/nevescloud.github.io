@@ -682,12 +682,16 @@
   // Declaration order is the surfaced order: autocomplete and the
   // bare /model listing both inherit it. Local-first because the page
   // defaults to LFM; `live` is opt-in.
-  // Gemma 4 caveat: it's a multimodal model (text+image+audio) that
-  // transformers.js loads via Gemma4ForConditionalGeneration + AutoProcessor.
-  // pip's local.esm.js currently uses AutoModelForCausalLM + AutoTokenizer,
-  // which may or may not pick up gemma-4 cleanly. If load fails at runtime,
-  // pip-core's local renderer needs a multimodal-aware loading branch.
   const MODELS = {
+    "lfm-nano": {
+      kind: "local",
+      id: "LiquidAI/LFM2.5-230M-ONNX",
+      label: "LFM2.5 230M", size: "~150MB",
+      notes: "Smallest in-browser fallback; no operator in the loop.",
+      dtype: "q4",
+      maxTokens: 256,
+      genParams: { temperature: 0.1, top_k: 50, repetition_penalty: 1.05 },
+    },
     "lfm-tiny": {
       kind: "local",
       id: "LiquidAI/LFM2.5-350M-ONNX",
@@ -705,15 +709,6 @@
       dtype: "q4",
       maxTokens: 1536,
       genParams: { temperature: 0.05, top_k: 50, repetition_penalty: 1.05 },
-    },
-    gemma: {
-      kind: "local",
-      id: "onnx-community/gemma-4-E2B-it-ONNX",
-      label: "Gemma 4 E2B", size: "~1.5GB",
-      notes: "In-browser, instruction-tuned; multimodal-capable model used here for text composition.",
-      dtype: "q4f16",
-      maxTokens: 1024,
-      genParams: { temperature: 0.1, top_k: 50, repetition_penalty: 1.05 },
     },
     live: {
       kind: "remote",
