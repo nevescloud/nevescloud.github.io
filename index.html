@@ -1162,11 +1162,7 @@
     });
   }
 
-  // ── Project curation (docs/data/projects.json) ──────────────────────
-  // Single source of truth for Labs/Demos cards. Each entry is a full
-  // card definition (repo/section/name/desc/href, optional pinId/public).
-  // featured = full-width treatment, rendered first in its section in
-  // JSON order. visible = regular cards, also in JSON order.
+  // ── Project curation ── card source + schema: data/projects.json
   let _curationPromise = null;
   function getCuration() {
     if (!_curationPromise) {
@@ -1217,13 +1213,9 @@
     desc.textContent = entry.desc;
     info.append(name, desc);
 
-    // Static topics — only set on cards whose source repo isn't reachable
-    // by enhanceLabsAndDemos() (private repos, org-owned repos). Public
-    // jonasneves/* repos should carry topics on GitHub instead, where
-    // they evolve with the work. The enhancer skips injection when
-    // .project-topics already exists, so the two sources never collide.
-    // Compact cards take 3 topic chips, featured 4, keeping the row
-    // inside the card width so chips don't clip mid-word.
+    // Static topics (see projects.json). enhanceLabsAndDemos() skips injection
+    // when .project-topics already exists, so the two sources never collide.
+    // Cap 3 chips (featured 4) to keep the row inside card width.
     const topicChips = Array.isArray(entry.topics)
       ? entry.topics.slice(0, isFeatured ? 4 : 3)
           .map(t => `<span class="project-topic">${escHtml(t)}</span>`).join('')
