@@ -5,8 +5,9 @@
 // Preserves the remaining path + query + hash on the way out.
 (function () {
   var MAP = {
-    cuko:  "https://cuko.neves.cloud/",
-    wires: "https://wires.neves.cloud/",
+    cuko:       "https://cuko.neves.cloud/",
+    wires:      "https://wires.neves.cloud/",
+    canvasflow: "https://canvasflow.neves.cloud/",
   };
   var m = location.pathname.match(/^\/([^\/]+)(?:\/(.*))?$/);
   var base = m && MAP[m[1]];
