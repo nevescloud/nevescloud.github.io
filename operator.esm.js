@@ -240,7 +240,6 @@ export function mountOperatorPanel({
     bridgeOk: null,
   };
 
-  // Build DOM.
   const aside = document.createElement('aside');
   aside.id = 'operator-panel';
   aside.hidden = true;

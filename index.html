@@ -703,10 +703,6 @@
       <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v9.5A1.75 1.75 0 0 1 14.25 13H8.06l-2.573 2.573A1.458 1.458 0 0 1 3 14.543V13H1.75A1.75 1.75 0 0 1 0 11.25Zm1.75-.25a.25.25 0 0 0-.25.25v9.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h6.5a.25.25 0 0 0 .25-.25v-9.5a.25.25 0 0 0-.25-.25Zm6.25 4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM4.5 6.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm7-1a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"/></svg>
       Dashboard
     </a>
-    <a class="dropdown-item dropdown-owner" href="./repos/" role="menuitem">
-      <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M2 2.5A2.5 2.5 0 0 1 4.5 0h8.75a.75.75 0 0 1 .75.75v12.5a.75.75 0 0 1-.75.75h-2.5a.75.75 0 0 1 0-1.5h1.75v-2h-8a1 1 0 0 0-.714 1.7.75.75 0 1 1-1.072 1.05A2.495 2.495 0 0 1 2 11.5Zm10.5-1h-8a1 1 0 0 0-1 1v6.708A2.486 2.486 0 0 1 4.5 9h8ZM5 12.25a.25.25 0 0 1 .25-.25h3.5a.25.25 0 0 1 .25.25v3.25a.25.25 0 0 1-.4.2l-1.45-1.087a.249.249 0 0 0-.3 0L5.4 15.7a.25.25 0 0 1-.4-.2Z"/></svg>
-      Repos
-    </a>
     <a class="dropdown-item dropdown-owner" href="./s/admin/" role="menuitem">
       <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M7.775 3.275a.75.75 0 0 0 1.06 1.06l1.25-1.25a2 2 0 1 1 2.83 2.83l-2.5 2.5a2 2 0 0 1-2.83 0 .75.75 0 0 0-1.06 1.06 3.5 3.5 0 0 0 4.95 0l2.5-2.5a3.5 3.5 0 0 0-4.95-4.95l-1.25 1.25Zm-4.69 9.64a2 2 0 0 1 0-2.83l2.5-2.5a2 2 0 0 1 2.83 0 .75.75 0 0 0 1.06-1.06 3.5 3.5 0 0 0-4.95 0l-2.5 2.5a3.5 3.5 0 0 0 4.95 4.95l1.25-1.25a.75.75 0 0 0-1.06-1.06l-1.25 1.25a2 2 0 0 1-2.83 0Z"/></svg>
       Shares
@@ -1053,7 +1049,7 @@
   // /auth slash — sole sign-in entry point. Writes to '__neevs_auth' so
   // loadAuth() picks the session up on next page load (user pill, body.owner).
   // Default scope is just identity; gist (share-link admin under /s/admin/)
-  // and repo (dashboard, /repos browser) are opt-in at sign-in time so the
+  // and repo (dashboard) are opt-in at sign-in time so the
   // permission ask matches what the user actually wants to do.
   attachAuth(pip, {
     providers: [githubProvider({
@@ -1166,12 +1162,7 @@
     });
   }
 
-  // ── Project curation (docs/data/projects.json) ──────────────────────
-  // Single source of truth for Labs/Demos cards. Each entry is a full
-  // card definition (repo/section/name/desc/href, optional pinId/public).
-  // featured = full-width treatment, rendered first in its section in
-  // JSON order. visible = regular cards, also in JSON order. The same
-  // file's hide_from_repos drops repos from the standalone /repos/ list.
+  // ── Project curation ── card source + schema: data/projects.json
   let _curationPromise = null;
   function getCuration() {
     if (!_curationPromise) {
@@ -1222,13 +1213,9 @@
     desc.textContent = entry.desc;
     info.append(name, desc);
 
-    // Static topics — only set on cards whose source repo isn't reachable
-    // by enhanceLabsAndDemos() (private repos, org-owned repos). Public
-    // jonasneves/* repos should carry topics on GitHub instead, where
-    // they evolve with the work. The enhancer skips injection when
-    // .project-topics already exists, so the two sources never collide.
-    // Compact cards take 3 topic chips, featured 4, keeping the row
-    // inside the card width so chips don't clip mid-word.
+    // Static topics (see projects.json). enhanceLabsAndDemos() skips injection
+    // when .project-topics already exists, so the two sources never collide.
+    // Cap 3 chips (featured 4) to keep the row inside card width.
     const topicChips = Array.isArray(entry.topics)
       ? entry.topics.slice(0, isFeatured ? 4 : 3)
           .map(t => `<span class="project-topic">${escHtml(t)}</span>`).join('')
@@ -1353,8 +1340,7 @@
   const _renderPromise = applyProjectsCuration();
 
   // Repos data — fetched only to feed enhanceLabsAndDemos(), which pulls
-  // topics + homepage onto the curated Labs/Demos cards. The standalone
-  // Repos browse view at /repos/ does its own authed fetch. Owner hits
+  // topics + homepage onto the curated Labs/Demos cards. Owner hits
   // the authed endpoint so private repos come along too (private cards
   // in Labs/Demos still get their GitHub-icon secondary link); visitors
   // hit the anonymous public-repos endpoint. Cache is sessionStorage

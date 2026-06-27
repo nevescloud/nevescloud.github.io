@@ -570,7 +570,6 @@ async function render() {
 
   mainEl.innerHTML = html;
 
-  // Wire actions
   mainEl.querySelectorAll('.file-row').forEach(row => {
     const path = row.dataset.path;
     const file = state.files.find(f => f.path === path);
@@ -687,7 +686,6 @@ async function reencryptFile(file, src) {
   });
   if (!res.ok) throw new Error('GIST_UPDATE_FAILED');
 
-  // Update registry source_hash + updated_at
   const shares = state.registry.shares.map(s =>
     s.source === file.path ? { ...s, source_hash: src.hash, updated_at: new Date().toISOString() } : s
   );
