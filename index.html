@@ -6,10 +6,11 @@
   <script>
   /* e-ink reader -> live-reader. Runs before any CSS/JS so the ancient WebKit
      never parses the modern homepage. Fire tablets (Silk) are modern Chromium and
-     keep the normal site. Target is a different host, so no loop; replace() keeps Back. */
+     keep the normal site. /reader is Cloudflare-routed (never serves this page),
+     so no loop; replace() keeps Back. */
   (function(){try{var u=navigator.userAgent||"";
     if(/Kindle|Kobo|reMarkable|PocketBook|Boox/.test(u)&&!/Silk/.test(u)){
-      location.replace("https://mcp.neves.cloud/live-reader/r");}}catch(e){}})();
+      location.replace("https://neves.cloud/reader");}}catch(e){}})();
   </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
   <meta name="description" content="neves.cloud — agentic systems you can try in the browser. Live demos of WebRTC agents, on-device models, and robots. No install, no signup.">
