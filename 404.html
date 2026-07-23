@@ -10,195 +10,32 @@
   <script src="/redirects.js"></script>
   <link rel="icon" type="image/svg+xml" href="/icon.svg">
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      color-scheme: light dark;
-      --bg: #f5f5f7;
-      --surface: #ffffff;
-      --ink: #1d1d1f;
-      --ink-muted: #6e6e73;
-      --border: rgba(0,0,0,0.10);
-      --accent: #006d51;
-      --punct: #E89923;
-      --radius: 8px;
-      --ease: cubic-bezier(0.25, 0.8, 0.25, 1);
-    }
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #1a1d20;
-        --surface: #212529;
-        --ink: #e9ecef;
-        --ink-muted: #adb5bd;
-        --border: rgba(255,255,255,0.10);
-        --accent: #54a679;
-      }
-    }
-
     body {
-      background: var(--bg);
-      color: var(--ink);
-      font: 15px/1.5 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
-      min-height: 100svh;
-      max-width: 720px;
-      margin: 0 auto;
-      padding: 4rem 1.5rem 6rem;
+      font-family: system-ui, -apple-system, sans-serif;
+      margin: 4rem auto;
+      max-width: 32rem;
+      padding: 0 1.5rem;
+      color: #1d1d1f;
+      line-height: 1.5;
     }
-
-    h1 {
-      font: 700 28px/1.1 -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif;
-      letter-spacing: -0.02em;
-      margin-bottom: 0.5rem;
-    }
-    p { color: var(--ink-muted); margin-bottom: 1rem; }
     code {
       font: 13px/1 ui-monospace, "SF Mono", Menlo, monospace;
-      background: var(--surface);
-      border: 1px solid var(--border);
+      background: rgba(0,0,0,0.05);
       padding: 2px 6px;
       border-radius: 4px;
     }
-    a { color: var(--accent); text-decoration: none; }
-    a:hover { color: var(--punct); }
-
-    .suggest {
-      margin: 1.5rem 0;
-      padding: 1rem 1.25rem;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      display: none;
+    a { color: #006d51; }
+    @media (prefers-color-scheme: dark) {
+      body { background: #1a1d20; color: #e9ecef; }
+      code { background: rgba(255,255,255,0.08); }
+      a { color: #54a679; }
     }
-    .suggest.show { display: block; }
-    .suggest strong { color: var(--ink); }
-
-    .search {
-      width: 100%;
-      padding: 0.7rem 0.9rem;
-      margin: 1.5rem 0 1rem;
-      font: inherit;
-      background: var(--surface);
-      color: var(--ink);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-    }
-    .search:focus {
-      outline: none;
-      border-color: var(--accent);
-    }
-
-    ul.list { list-style: none; }
-    ul.list li {
-      padding: 0.75rem 0;
-      border-bottom: 1px solid var(--border);
-    }
-    ul.list li:last-child { border-bottom: 0; }
-    ul.list a { color: var(--ink); display: block; }
-    ul.list a:hover .name { color: var(--punct); }
-    .name { font-weight: 600; color: var(--ink); transition: color 0.15s var(--ease); }
-    .href { color: var(--ink-muted); font: 12px/1.2 ui-monospace, "SF Mono", Menlo, monospace; margin-left: 0.5rem; }
-    .desc { color: var(--ink-muted); font-size: 13px; margin-top: 0.15rem; }
-
-    footer { margin-top: 3rem; color: var(--ink-muted); font-size: 13px; }
   </style>
 </head>
 <body>
   <h1>Not found</h1>
-  <p><code id="path">/</code> didn't match any project on <a href="/">neves.cloud</a>.</p>
-
-  <div class="suggest" id="suggest">
-    Did you mean <strong><a id="suggest-link" href="#"></a></strong>?
-  </div>
-
-  <input type="search" class="search" id="search" placeholder="Search projects…" autocomplete="off">
-  <ul class="list" id="list"></ul>
-
-  <footer>
-    <a href="/">← back to neves.cloud</a>
-  </footer>
-
-  <script type="module">
-    const pathEl = document.getElementById('path');
-    const suggestEl = document.getElementById('suggest');
-    const suggestLink = document.getElementById('suggest-link');
-    const searchEl = document.getElementById('search');
-    const listEl = document.getElementById('list');
-
-    const path = location.pathname;
-    pathEl.textContent = path;
-    const wantedSlug = path.replace(/^\/+/, '').replace(/\/+$/, '').split('/')[0].toLowerCase();
-
-    function slugFromHref(href) {
-      if (!href || /^https?:/.test(href)) return null;
-      const m = href.match(/^\/+([^\/]+)/);
-      return m ? m[1].toLowerCase() : null;
-    }
-
-    // Damerau-Levenshtein-ish: cheap enough for ~30 entries.
-    function distance(a, b) {
-      const m = a.length, n = b.length;
-      if (!m) return n; if (!n) return m;
-      const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
-      for (let i = 0; i <= m; i++) dp[i][0] = i;
-      for (let j = 0; j <= n; j++) dp[0][j] = j;
-      for (let i = 1; i <= m; i++) {
-        for (let j = 1; j <= n; j++) {
-          const cost = a[i-1] === b[j-1] ? 0 : 1;
-          dp[i][j] = Math.min(dp[i-1][j] + 1, dp[i][j-1] + 1, dp[i-1][j-1] + cost);
-        }
-      }
-      return dp[m][n];
-    }
-
-    function score(card) {
-      const slug = slugFromHref(card.href);
-      if (!slug || !wantedSlug) return Infinity;
-      // Substring boost
-      if (slug.includes(wantedSlug) || wantedSlug.includes(slug)) return 0;
-      return distance(slug, wantedSlug);
-    }
-
-    function renderList(cards, filter = '') {
-      const f = filter.trim().toLowerCase();
-      const filtered = !f ? cards : cards.filter(c => {
-        return [c.name, c.desc, c.href, ...(c.topics || [])]
-          .filter(Boolean).join(' ').toLowerCase().includes(f);
-      });
-      listEl.innerHTML = filtered.map(c => `
-        <li>
-          <a href="${c.href}">
-            <span class="name">${c.name}</span>
-            <span class="href">${c.href || ''}</span>
-            ${c.desc ? `<div class="desc">${c.desc}</div>` : ''}
-          </a>
-        </li>
-      `).join('');
-    }
-
-    try {
-      const res = await fetch('/data/projects.json');
-      if (!res.ok) throw new Error('projects.json fetch failed');
-      const data = await res.json();
-      const cards = [...(data.featured || []), ...(data.visible || [])]
-        .filter(c => c.href);
-
-      // Suggest closest match if it's a near-miss.
-      if (wantedSlug) {
-        const scored = cards.map(c => ({ c, s: score(c) })).sort((a, b) => a.s - b.s);
-        const best = scored[0];
-        if (best && best.s <= 3) {
-          suggestLink.textContent = best.c.name;
-          suggestLink.href = best.c.href;
-          suggestEl.classList.add('show');
-        }
-      }
-
-      renderList(cards);
-      searchEl.addEventListener('input', e => renderList(cards, e.target.value));
-    } catch (err) {
-      // Static fallback content already renders; nothing to do.
-      console.warn('404 enhancement failed:', err);
-    }
-  </script>
+  <p><code id="path">/</code> isn't here. Apps live on their own subdomains;
+     everything else is at <a href="https://jonasneves.com">jonasneves.com</a>.</p>
+  <script>document.getElementById('path').textContent = location.pathname;</script>
 </body>
 </html>
