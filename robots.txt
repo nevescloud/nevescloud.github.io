@@ -1,5 +1,2 @@
 User-agent: *
-Disallow: /s/
-Disallow: /playground.html
 Disallow: /dashboard/
-Disallow: /repos/
