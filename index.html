@@ -372,19 +372,6 @@
       border: 0;
     }
 
-    /* ── Visibility (owner-only surfaces) ──────────────────────────── */
-    /* Private rows stay fully legible (the owner is the audience that
-       needs to act on them); a dashed border carries the "provisional"
-       signal where opacity-dim used to, without crushing contrast. */
-    [data-public="false"] { display: none; }
-    body.owner [data-public="false"] { display: flex; border-style: dashed; }
-    body.owner [data-public="false"] .project-name::after {
-      content: ' · private';
-      font-size: 0.7em;
-      font-weight: 400;
-      color: var(--ink-muted);
-    }
-
     /* ── Featured layout (driven by repo `featured` topic) ─────────── */
     /* When a section contains a card with .is-featured, switch to a 2-col
        compact grid. Featured cards span the full row; non-featured tile
@@ -563,9 +550,6 @@
     .dropdown-item:hover { background: var(--border-subtle); color: var(--ink); }
     .dropdown-item svg { flex-shrink: 0; opacity: 0.5; }
     .dropdown-item:hover svg { opacity: 0.8; }
-    /* Owner-only entries vanish for any other authed user; the linked
-       page redirects them too, but hiding the link avoids a dead-end click. */
-    body:not(.owner) .dropdown-owner { display: none; }
     .dropdown-sep { height: 0; border-top: 0.5px solid var(--border-default); margin: 0.25rem 0.5rem; }
     /* Online indicator on the user-pill — small green dot at top-right
        while the operator is hosting, gone when offline. Driven by
@@ -633,24 +617,9 @@
       <line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/>
       <line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/>
     </symbol>
-    <symbol id="icon-activity" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-    </symbol>
-    <symbol id="icon-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-      <circle cx="12" cy="12" r="3"/>
-    </symbol>
-    <symbol id="icon-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-      <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-      <line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>
-    </symbol>
     <symbol id="icon-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
       <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
-    </symbol>
-    <symbol id="icon-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
     </symbol>
     <symbol id="icon-bot" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <rect x="3" y="11" width="18" height="10" rx="2"/>
@@ -671,10 +640,6 @@
     <symbol id="icon-book" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
       <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-    </symbol>
-    <symbol id="icon-camera" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-      <circle cx="12" cy="13" r="4"/>
     </symbol>
   </svg>
 
@@ -714,10 +679,6 @@
     <a class="dropdown-item" href="./dashboard/" role="menuitem">
       <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v9.5A1.75 1.75 0 0 1 14.25 13H8.06l-2.573 2.573A1.458 1.458 0 0 1 3 14.543V13H1.75A1.75 1.75 0 0 1 0 11.25Zm1.75-.25a.25.25 0 0 0-.25.25v9.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h6.5a.25.25 0 0 0 .25-.25v-9.5a.25.25 0 0 0-.25-.25Zm6.25 4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM4.5 6.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm7-1a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"/></svg>
       Dashboard
-    </a>
-    <a class="dropdown-item dropdown-owner" href="./s/admin/" role="menuitem">
-      <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M7.775 3.275a.75.75 0 0 0 1.06 1.06l1.25-1.25a2 2 0 1 1 2.83 2.83l-2.5 2.5a2 2 0 0 1-2.83 0 .75.75 0 0 0-1.06 1.06 3.5 3.5 0 0 0 4.95 0l2.5-2.5a3.5 3.5 0 0 0-4.95-4.95l-1.25 1.25Zm-4.69 9.64a2 2 0 0 1 0-2.83l2.5-2.5a2 2 0 0 1 2.83 0 .75.75 0 0 0 1.06-1.06 3.5 3.5 0 0 0-4.95 0l-2.5 2.5a3.5 3.5 0 0 0 4.95 4.95l1.25-1.25a.75.75 0 0 0-1.06-1.06l-1.25 1.25a2 2 0 0 1-2.83 0Z"/></svg>
-      Shares
     </a>
     <div class="dropdown-sep" role="separator"></div>
     <button class="dropdown-item dropdown-danger" id="menu-signout" role="menuitem">
@@ -1058,16 +1019,14 @@
 
   // /auth slash — sole sign-in entry point. Writes to '__neevs_auth' so
   // loadAuth() picks the session up on next page load (user pill, body.owner).
-  // Default scope is just identity; gist (share-link admin under /s/admin/)
-  // and repo (dashboard) are opt-in at sign-in time so the
-  // permission ask matches what the user actually wants to do.
+  // Default scope is just identity; repo (dashboard) is opt-in at sign-in
+  // time so the permission ask matches what the user actually wants to do.
   attachAuth(pip, {
     providers: [githubProvider({
       clientId: 'Ov23li3dnFMUNHbu1SjZ',
       callbackOrigin: 'https://auth.neves.cloud',
       scope: 'read:user',
       optionalScopes: {
-        gist: 'Manage share-link admin',
         repo: 'View your repositories',
       },
       storageKey: '__neevs_auth',
@@ -1188,7 +1147,6 @@
     card.className = 'project-card' + (isFeatured ? ' is-featured' : '');
     card.dataset.repo = entry.repo;
     if (entry.pinId) card.dataset.pinId = entry.pinId;
-    if (entry.public) card.dataset.public = 'true';
     if (Array.isArray(entry.themes) && entry.themes.length) {
       // Pipe-joined so a substring match can't cross theme boundaries.
       card.dataset.themes = '|' + entry.themes.join('|') + '|';
