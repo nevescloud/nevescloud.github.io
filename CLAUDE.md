@@ -5,7 +5,7 @@ Apex redirect + legacy-path stubs for **neves.cloud** (Cloudflare in front, GitH
 Consolidated 2026-07-23: the apex no longer hosts a showcase — **jonasneves.com is the single front door** (bio + selected work; `jonasneves/jonasneves.github.io`). neves.cloud remains a utility *namespace*: apps live on subdomains (`reader.`, `cuko.`, `auth.`, `mcp.` — Cloudflare Workers/Pages, not this repo). This repo serves only:
 
 - `index.html` — apex → jonasneves.com, with the e-ink UA branch kept intact (Kindle/Kobo/etc → `neves.cloud/reader`, Cloudflare-routed).
-- `404.html` + `redirects.js` + `<slug>/index.html` stubs — legacy deep links (cuko, wires, canvasflow) forward to their subdomains.
+- `404.html` + `redirects.js` + `<slug>/index.html` stubs — legacy deep links (cuko, canvasflow) forward to their subdomains.
 
 ## Branches — source vs. published
 
