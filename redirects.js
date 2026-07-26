@@ -1,11 +1,13 @@
-// Single source of truth: slug → its new home on a subdomain.
-// Consumed by 404.html (legacy deep paths like /cuko/remote/ that 404) and by
-// each <slug>/index.html stub (clean 200 at the bare /<slug> root). Add a line
-// here + a <slug>/index.html stub to retire a path into its own subdomain.
-// Preserves the remaining path + query + hash on the way out.
+// Single source of truth: slug → its new home (a subdomain, or a path on
+// another domain). Consumed by 404.html (legacy deep paths like /cuko/remote/
+// that 404) and by each <slug>/index.html stub (clean 200 at the bare /<slug>
+// root). Add a line here + a <slug>/index.html stub to retire a path.
+// Preserves the remaining path + query + hash on the way out — so every target
+// needs its trailing slash, or subpaths (and only subpaths) break.
 (function () {
   var MAP = {
-    cuko:       "https://cuko.neves.cloud/",
+    cuko:       "https://jonasneves.com/cuko/",
+    wires:      "https://jonasneves.com/wires/",
     canvasflow: "https://canvasflow.neves.cloud/",
   };
   var m = location.pathname.match(/^\/([^\/]+)(?:\/(.*))?$/);
