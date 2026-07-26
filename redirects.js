@@ -6,7 +6,6 @@
 (function () {
   var MAP = {
     cuko:       "https://cuko.neves.cloud/",
-    wires:      "https://wires.neves.cloud/",
     canvasflow: "https://canvasflow.neves.cloud/",
   };
   var m = location.pathname.match(/^\/([^\/]+)(?:\/(.*))?$/);
