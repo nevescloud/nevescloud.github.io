@@ -3,8 +3,17 @@
        near-white Pip (#ecedf1) on a cool near-black ground (#1c1d21),
        sampled from the source art. Pip is the pip-core Lucide-bot in its
        idle pose — left-pointing antenna (antenna-l), eyes open — drawn thick.
-       Apple-icon polish: superellipse-leaning corner (rx 56 ≈ 22%), subtle
-       135deg ground, top sheen, hairline inner edge. -->
+       Subtle 135deg ground, top sheen.
+
+       FULL BLEED, deliberately: ground to all four edges, no corner radius, no
+       transparency. Every host that shows an app icon lays it on its own tile
+       and applies its own mask — Apple included, which is why icon-apple.png
+       beside this file is already square. An icon that rounds its own corners
+       shows the tile through wherever its radius cuts in further than the
+       host's, and it can only ever match one host. This carried rx="56" (≈22%)
+       against Claude's connector tile at ≈7%, which is what put four pale
+       wedges on both neves.cloud connectors. The inset hairline went with it:
+       under a mask it reads as a rounded outline floating inside a square. -->
   <defs>
     <linearGradient id="ground" x1="0" y1="0" x2="256" y2="256" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#23242a"/>
@@ -16,9 +25,8 @@
     </linearGradient>
   </defs>
 
-  <rect width="256" height="256" rx="56" fill="url(#ground)"/>
-  <rect width="256" height="256" rx="56" fill="url(#sheen)"/>
-  <rect x="1.5" y="1.5" width="253" height="253" rx="54.5" fill="none" stroke="#ffffff" stroke-opacity="0.10" stroke-width="2"/>
+  <rect width="256" height="256" fill="url(#ground)"/>
+  <rect width="256" height="256" fill="url(#sheen)"/>
 
   <!-- Pip (native 24x24), idle pose: antenna-l points up-then-left. Thick. -->
   <g transform="translate(50,50) scale(6.5)" fill="none" stroke="#ecedf1"
