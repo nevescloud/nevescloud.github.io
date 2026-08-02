@@ -5,15 +5,26 @@
        idle pose — left-pointing antenna (antenna-l), eyes open — drawn thick.
        Subtle 135deg ground, top sheen.
 
-       FULL BLEED, deliberately: ground to all four edges, no corner radius, no
-       transparency. Every host that shows an app icon lays it on its own tile
-       and applies its own mask — Apple included, which is why icon-apple.png
-       beside this file is already square. An icon that rounds its own corners
-       shows the tile through wherever its radius cuts in further than the
-       host's, and it can only ever match one host. This carried rx="56" (≈22%)
-       against Claude's connector tile at ≈7%, which is what put four pale
-       wedges on both neves.cloud connectors. The inset hairline went with it:
-       under a mask it reads as a rounded outline floating inside a square. -->
+       FULL BLEED, and it is a trade, not a universal rule. An icon's shape has
+       to match how its host treats it: a masking host wants full bleed plus a
+       safe zone, a non-cropping one is happier with a rounded plate. termd
+       serves both, splitting icon.svg (purpose any, plate) from
+       icon-maskable.svg (purpose maskable, full bleed).
+
+       This file cannot split, because one asset feeds two hosts that want
+       opposite things. Browser tabs do not crop it; Claude's connector list
+       does, resolving a custom connector's icon from the registrable domain.
+       It carried rx="56" (about 22 percent) against Claude's tile at roughly
+       7 percent, and that difference showed as four pale wedges on both
+       neves.cloud connectors. Full bleed loses the plate in a 16px tab, where
+       the radius was barely legible anyway, and fixes a 40px list where the
+       wedges were glaring. The inset hairline went with the radius: under any
+       mask it reads as a rounded outline floating inside a square.
+
+       If a plate is ever wanted back in the tab, add icon-maskable.svg and
+       point the tab at a plated icon.svg, the way termd does. Note that Claude
+       reads the favicon, not a manifest, so whichever file the tab points at is
+       the one it will crop. -->
   <defs>
     <linearGradient id="ground" x1="0" y1="0" x2="256" y2="256" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#23242a"/>
