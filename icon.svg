@@ -1,30 +1,59 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
-  <!-- neves.cloud app icon — the Pip mark in its cool monochrome dress:
-       near-white Pip (#ecedf1) on a cool near-black ground (#1c1d21),
-       sampled from the source art. Pip is the pip-core Lucide-bot in its
-       idle pose — left-pointing antenna (antenna-l), eyes open — drawn thick.
-       Subtle 135deg ground, top sheen.
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256"
+     role="img" aria-label="neves.cloud">
+  <!-- neves.cloud app icon: the domain set as a wordmark, near-white (#ecedf1)
+       on the cool near-black ground. Lowercase on purpose. "nc" here is a
+       domain, not a person's initials, and the apex is a utility namespace, not
+       a product; sentence case is the register that says so. The sibling site
+       jonasneves.com carries "JN" in caps because those ARE initials.
 
-       FULL BLEED, and it is a trade, not a universal rule. An icon's shape has
-       to match how its host treats it: a masking host wants full bleed plus a
-       safe zone, a non-cropping one is happier with a rounded plate. termd
-       serves both, splitting icon.svg (purpose any, plate) from
-       icon-maskable.svg (purpose maskable, full bleed).
+       Replaced the Pip robot mark 2026-08-03. Pip is a product mascot
+       (nevescloud/pip), and this file is not a product surface: it is the
+       identity of a namespace whose members each carry their own glyph
+       (nevescloud/reader draws a page with a tappable answer). A mascot at the
+       apex claimed the whole namespace for one product inside it.
 
-       This file cannot split, because one asset feeds two hosts that want
-       opposite things. Browser tabs do not crop it; Claude's connector list
-       does, resolving a custom connector's icon from the registrable domain.
-       It carried rx="56" (about 22 percent) against Claude's tile at roughly
-       7 percent, and that difference showed as four pale wedges on both
-       neves.cloud connectors. Full bleed loses the plate in a 16px tab, where
-       the radius was barely legible anyway, and fixes a 40px list where the
-       wedges were glaring. The inset hairline went with the radius: under any
-       mask it reads as a rounded outline floating inside a square.
+       This file is load bearing well past a browser tab. Claude resolves a
+       custom connector's icon from the REGISTRABLE DOMAIN, so this single asset
+       is the mark every *.neves.cloud MCP connector shows in the connector
+       list. Changing it changes all of them at once.
 
-       If a plate is ever wanted back in the tab, add icon-maskable.svg and
-       point the tab at a plated icon.svg, the way termd does. Note that Claude
-       reads the favicon, not a manifest, so whichever file the tab points at is
-       the one it will crop. -->
+       FULL BLEED, and that is a trade, not a universal rule. An icon's shape
+       has to match how its host treats it: a masking host wants full bleed plus
+       a safe zone, a non-cropping one is happier with a rounded plate. A
+       sibling project (jonasneves/termd) serves both, splitting icon.svg
+       (web manifest purpose "any", a rounded plate) from icon-maskable.svg
+       (purpose "maskable", full bleed). This file cannot split,
+       because one asset feeds two hosts that want opposite things. Browser tabs
+       do not crop it; Claude's connector tile does. It once carried rx="56"
+       (about 22 percent) against that tile at roughly 7 percent, and the
+       difference showed as four pale wedges on every neves.cloud connector.
+       Full bleed loses the plate in a 16px tab, where the radius was barely
+       legible anyway, and fixes a 40px list where the wedges were glaring.
+
+       The ground is drawn at 260 square, offset by 2, so a rasterizer rounding
+       at the edge cannot leave a transparent hairline for a host tile to shine
+       through. Same defect as the wedges, one pixel wide instead of twelve.
+
+       Type is <text>, not outlined paths: on Apple devices the stack resolves
+       to the real SF Pro Display, so the mark is the same typeface as the
+       jonasneves.com wordmark. Two letters, so fallback drift is tolerable.
+       The anchor is measured, not assumed, and both numbers sit deliberately
+       off centre. y is the alphabetic baseline rather than
+       dominant-baseline="central": lowercase ink spans baseline to x height
+       only, so em box centering hangs it low, and central is among the least
+       reliably implemented SVG attributes in rasterizers. x is 125 rather than
+       128 because letter spacing also applies after the final glyph, and c
+       carries a rounder right sidebearing than n; middle anchoring centres the
+       advance width, which left the visible ink 3px right of true centre.
+       Rendered ink measures 163 by 87 on 128,128, its corners 92px out, inside
+       the 102px circle a maskable host assumes safe. Do not restore x to 128
+       without re-rendering and measuring the ink box again.
+
+       Note for whoever edits this comment: no double hyphen may appear anywhere
+       inside it. XML comments have no escape for the sequence, so writing a CSS
+       token name with its leading hyphens makes the whole file unparseable, and
+       a favicon that fails to parse fails silently. (Hit 2026-07-30, on the
+       jonasneves.com twin.) -->
   <defs>
     <linearGradient id="ground" x1="0" y1="0" x2="256" y2="256" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#23242a"/>
@@ -36,17 +65,11 @@
     </linearGradient>
   </defs>
 
-  <rect width="256" height="256" fill="url(#ground)"/>
-  <rect width="256" height="256" fill="url(#sheen)"/>
+  <rect x="-2" y="-2" width="260" height="260" fill="url(#ground)"/>
+  <rect x="-2" y="-2" width="260" height="260" fill="url(#sheen)"/>
 
-  <!-- Pip (native 24x24), idle pose: antenna-l points up-then-left. Thick. -->
-  <g transform="translate(50,50) scale(6.5)" fill="none" stroke="#ecedf1"
-     stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M12 8V4H8"/>
-    <rect width="16" height="12" x="4" y="8" rx="2"/>
-    <path d="M2 14h2"/>
-    <path d="M20 14h2"/>
-    <path d="M9 13v2"/>
-    <path d="M15 13v2"/>
-  </g>
+  <text x="125" y="170" fill="#ecedf1"
+        font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, 'Helvetica Neue', Arial, sans-serif"
+        font-size="158" font-weight="700" letter-spacing="-4"
+        text-anchor="middle">nc</text>
 </svg>
