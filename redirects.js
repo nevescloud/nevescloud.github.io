@@ -8,7 +8,6 @@
   var MAP = {
     cuko:       "https://jonasneves.com/cuko/",
     wires:      "https://jonasneves.com/wires/",
-    canvasflow: "https://canvasflow.neves.cloud/",
   };
   var m = location.pathname.match(/^\/([^\/]+)(?:\/(.*))?$/);
   var base = m && MAP[m[1]];
