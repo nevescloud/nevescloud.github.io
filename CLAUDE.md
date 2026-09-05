@@ -5,7 +5,7 @@ Apex redirect + legacy-path stubs for **neves.cloud** (Cloudflare in front, GitH
 Consolidated 2026-07-23: the apex no longer hosts a showcase — **jonasneves.com is the single front door** (bio + selected work; `jonasneves/jonasneves.github.io`). neves.cloud remains a utility *namespace*: apps live on subdomains (`reader.`, `auth.`, `mcp.` — Cloudflare Workers/Pages, not this repo). This repo serves only:
 
 - `index.html` — apex → jonasneves.com, with the e-ink UA branch kept intact (Kindle/Kobo/etc → `neves.cloud/reader`, Cloudflare-routed).
-- `404.html` + `redirects.js` + `<slug>/index.html` stubs — legacy deep links forward to their current homes — cuko + wires to `jonasneves.com/<slug>/`. `/canvasflow/` is a project site again (`nevescloud/canvasflow`, Pages main:/docs) and needs no stub.
+- `404.html` + `redirects.js` + `<slug>/index.html` stubs — legacy deep links forward to their current homes — cuko + wires to `jonasneves.com/<slug>/`. `/canvasflow/` **does** need its stub again: the project renamed to `nevescloud/kandue` on 2026-09-05, so `/kandue/` is now the project site and `/canvasflow/*` falls through to here. Keep the stub and the map line — every extension build through 1.8.1 hard-codes `/canvasflow/uninstall.html`, and that URL only moves when an install auto-updates.
 - `icon.svg` — the apex favicon, and therefore the mark **every `*.neves.cloud` MCP connector shows in Claude's connector list** (Claude resolves a connector's icon from the registrable domain, not its own subdomain). One file, all connectors, so a change here is never cosmetic. Shape constraints, the measured anchor, and the editing trap that fails silently are in the file's own comment — read it before touching the art.
 
 ## Branches — source vs. published
