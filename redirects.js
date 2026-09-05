@@ -8,6 +8,11 @@
   var MAP = {
     cuko:       "https://jonasneves.com/cuko/",
     wires:      "https://jonasneves.com/wires/",
+    // The extension renamed CanvasFlow -> Kandue 2026-09-05, moving its project
+    // site with it. Load-bearing for installs, not just links: every build up to
+    // 1.8.1 hard-codes /canvasflow/uninstall.html as its setUninstallURL, and
+    // that only moves when an install auto-updates.
+    canvasflow: "https://neves.cloud/kandue/",
   };
   var m = location.pathname.match(/^\/([^\/]+)(?:\/(.*))?$/);
   var base = m && MAP[m[1]];
