@@ -1,53 +1,44 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256"
      role="img" aria-label="neves.cloud">
-  <!-- neves.cloud app icon: the domain set as a wordmark, near-white (#ecedf1)
-       on the cool near-black ground. Lowercase on purpose. "nc" here is a
-       domain, not a person's initials, and the apex is a utility namespace, not
-       a product; sentence case is the register that says so. The sibling site
-       jonasneves.com carries "JN" in caps because those ARE initials.
+  <!-- neves.cloud app icon: snow falling from a cloud, white on teal. The
+       domain drawn rather than spelled, since neves is Portuguese for snows.
 
-       Replaced the Pip robot mark 2026-08-03. Pip is a product mascot
-       (nevescloud/pip), and this file is not a product surface: it is the
-       identity of a namespace whose members each carry their own glyph
-       (nevescloud/reader draws a page with a tappable answer). A mascot at the
-       apex claimed the whole namespace for one product inside it.
+       Replaced the "nc" wordmark 2026-09-05, which had replaced the Pip robot
+       on 2026-08-03. That robot swap is the constraint worth keeping: a mascot
+       belongs to one product (nevescloud/pip), and this file is the identity of
+       a NAMESPACE whose members each carry their own glyph. Anything drawn here
+       has to be true of the whole namespace, not of one thing inside it.
 
        This file is load bearing well past a browser tab. Claude resolves a
        custom connector's icon from the REGISTRABLE DOMAIN, so this single asset
        is the mark every *.neves.cloud MCP connector shows in the connector
        list. Changing it changes all of them at once.
 
-       FULL BLEED, and that is a trade, not a universal rule. An icon's shape
-       has to match how its host treats it: a masking host wants full bleed plus
-       a safe zone, a non-cropping one is happier with a rounded plate. A
-       sibling project (jonasneves/termd) serves both, splitting icon.svg
-       (web manifest purpose "any", a rounded plate) from icon-maskable.svg
-       (purpose "maskable", full bleed). This file cannot split,
-       because one asset feeds two hosts that want opposite things. Browser tabs
-       do not crop it; Claude's connector tile does. It once carried rx="56"
-       (about 22 percent) against that tile at roughly 7 percent, and the
-       difference showed as four pale wedges on every neves.cloud connector.
-       Full bleed loses the plate in a 16px tab, where the radius was barely
-       legible anyway, and fixes a 40px list where the wedges were glaring.
+       FULL BLEED, and that is a trade, not a universal rule. A masking host
+       wants full bleed plus a safe zone, a non-cropping one is happier with a
+       rounded plate, and this file cannot split the way a sibling project
+       (jonasneves/termd) does, because one asset feeds two hosts that want
+       opposite things. Browser tabs do not crop it; Claude's connector tile
+       does. It once carried rx="56" (about 22 percent) against that tile at
+       roughly 7 percent, and the difference showed as four pale wedges on every
+       neves.cloud connector.
 
        The ground is drawn at 260 square, offset by 2, so a rasterizer rounding
        at the edge cannot leave a transparent hairline for a host tile to shine
        through. Same defect as the wedges, one pixel wide instead of twelve.
 
-       Type is <text>, not outlined paths: on Apple devices the stack resolves
-       to the real SF Pro Display, so the mark is the same typeface as the
-       jonasneves.com wordmark. Two letters, so fallback drift is tolerable.
-       The anchor is measured, not assumed, and both numbers sit deliberately
-       off centre. y is the alphabetic baseline rather than
-       dominant-baseline="central": lowercase ink spans baseline to x height
-       only, so em box centering hangs it low, and central is among the least
-       reliably implemented SVG attributes in rasterizers. x is 125 rather than
-       128 because letter spacing also applies after the final glyph, and c
-       carries a rounder right sidebearing than n; middle anchoring centres the
-       advance width, which left the visible ink 3px right of true centre.
-       Rendered ink measures 163 by 87 on 128,128, its corners 92px out, inside
-       the 102px circle a maskable host assumes safe. Do not restore x to 128
-       without re-rendering and measuring the ink box again.
+       Measured 2026-09-05, not eyeballed: ink spans 54 to 202 across and 54 to
+       214 down, and its furthest pixel is 88 from centre, inside the 102 circle
+       a maskable host assumes safe. Re-measure after moving any shape.
+
+       Legibility floor is the 16px favicon and GitHub's 16 and 20px avatar
+       rows, checked on both light and dark grounds. What survives there is the
+       cloud's silhouette; the flakes go to faint dots and the shaded underside
+       disappears. Both are deliberate, and the reason there is no outline
+       version of this: a stroked cloud lands on half pixels at 16 and renders
+       as a grey haze. A sibling project measured the same failure
+       (nevescloud/kandue, store/brand/README.md). Any replacement gets tested
+       at 16 before anything else about it is judged.
 
        Note for whoever edits this comment: no double hyphen may appear anywhere
        inside it. XML comments have no escape for the sequence, so writing a CSS
@@ -56,20 +47,61 @@
        jonasneves.com twin.) -->
   <defs>
     <linearGradient id="ground" x1="0" y1="0" x2="256" y2="256" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#23242a"/>
-      <stop offset="1" stop-color="#141519"/>
+      <stop offset="0" stop-color="#1a7f8f"/>
+      <stop offset="1" stop-color="#0a3742"/>
     </linearGradient>
-    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="256" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#ffffff" stop-opacity="0.08"/>
-      <stop offset="0.55" stop-color="#ffffff" stop-opacity="0"/>
-    </linearGradient>
+    <radialGradient id="glow" cx="128" cy="116" r="130" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".14"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <clipPath id="cloud">
+      <circle cx="84" cy="122" r="30"/>
+      <circle cx="128" cy="100" r="46"/>
+      <circle cx="172" cy="124" r="30"/>
+      <rect x="84" y="100" width="88" height="52"/>
+      <rect x="54" y="122" width="148" height="30" rx="15"/>
+    </clipPath>
   </defs>
 
   <rect x="-2" y="-2" width="260" height="260" fill="url(#ground)"/>
-  <rect x="-2" y="-2" width="260" height="260" fill="url(#sheen)"/>
+  <rect x="-2" y="-2" width="260" height="260" fill="url(#glow)"/>
 
-  <text x="125" y="170" fill="#ecedf1"
-        font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, 'Helvetica Neue', Arial, sans-serif"
-        font-size="158" font-weight="700" letter-spacing="-4"
-        text-anchor="middle">nc</text>
+  <!-- Cloud twice: the lower copy is the shaded underside, the upper copy is
+       the lit body clipped to the same silhouette and lifted 7. -->
+  <g fill="#b9d3d6">
+    <circle cx="84" cy="122" r="30"/>
+    <circle cx="128" cy="100" r="46"/>
+    <circle cx="172" cy="124" r="30"/>
+    <rect x="84" y="100" width="88" height="52"/>
+    <rect x="54" y="122" width="148" height="30" rx="15"/>
+  </g>
+  <g clip-path="url(#cloud)">
+    <g fill="#ffffff" transform="translate(0 -7)">
+      <circle cx="84" cy="122" r="30"/>
+      <circle cx="128" cy="100" r="46"/>
+      <circle cx="172" cy="124" r="30"/>
+      <rect x="84" y="100" width="88" height="52"/>
+      <rect x="54" y="122" width="148" height="30" rx="15"/>
+    </g>
+  </g>
+
+  <!-- Three flakes, each a six arm asterisk: different size, opacity and
+       rotation so they read as falling rather than as a row of dots. -->
+  <g stroke="#ffffff" stroke-linecap="round" fill="none">
+    <g stroke-width="5.5" opacity=".95">
+      <path d="M96 179 V201"/>
+      <path d="M96 179 V201" transform="rotate(60 96 190)"/>
+      <path d="M96 179 V201" transform="rotate(120 96 190)"/>
+    </g>
+    <g stroke-width="4.5" opacity=".8" transform="rotate(25 140 204)">
+      <path d="M140 196 V212"/>
+      <path d="M140 196 V212" transform="rotate(60 140 204)"/>
+      <path d="M140 196 V212" transform="rotate(120 140 204)"/>
+    </g>
+    <g stroke-width="4.5" opacity=".65" transform="rotate(-10 180 186)">
+      <path d="M180 177 V195"/>
+      <path d="M180 177 V195" transform="rotate(60 180 186)"/>
+      <path d="M180 177 V195" transform="rotate(120 180 186)"/>
+    </g>
+  </g>
 </svg>
