@@ -2,26 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <script>
-  /* Two-way fork, before anything renders:
-     - e-ink readers (Kindle/Kobo/…) typing neves.cloud still land on the
-       live reader. /reader is Cloudflare-routed (never serves this page),
-       so no loop. Fire tablets (Silk) are modern Chromium and fall through.
-     - everyone else → jonasneves.com, the single front door. */
-  (function () {
-    try {
-      var u = navigator.userAgent || "";
-      if (/Kindle|Kobo|reMarkable|PocketBook|Boox/.test(u) && !/Silk/.test(u)) {
-        location.replace("https://neves.cloud/reader");
-        return;
-      }
-    } catch (e) {}
-    location.replace("https://jonasneves.com/");
-  })();
-  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
-  <!-- No-JS fallback; the script above handles the e-ink branch first. -->
+  <!-- Unconditional, and no script. The e-ink user-agent branch that used to sit
+       here (Kindle/Kobo/… -> /reader) read as a conditional cross-domain redirect
+       and drew a Safe Browsing "Deceptive pages" flag on the whole domain; /reader
+       answered 404 from its Cloudflare route the entire time, so it served nobody.
+       E-ink readers use reader.neves.cloud, which the reader's own setup gives out. -->
   <meta http-equiv="refresh" content="0; url=https://jonasneves.com/">
   <link rel="canonical" href="https://jonasneves.com/">
   <title>Redirecting…</title>
@@ -42,6 +29,7 @@
   </style>
 </head>
 <body>
-  <p>This has moved to <a href="https://jonasneves.com">jonasneves.com</a>. Redirecting…</p>
+  <p>This has moved to <a href="https://jonasneves.com">jonasneves.com</a>.
+     Reading on an e-reader? <a href="https://reader.neves.cloud/">reader.neves.cloud</a>.</p>
 </body>
 </html>

@@ -12,7 +12,12 @@
     // site with it. Load-bearing for installs, not just links: every build up to
     // 1.8.1 hard-codes /canvasflow/uninstall.html as its setUninstallURL, and
     // that only moves when an install auto-updates.
-    canvasflow: "https://neves.cloud/kandue/",
+    canvasflow: "https://kandue.app/",
+    // /kandue/* otherwise reaches GitHub's own canonicalisation: nevescloud/kandue
+    // is a project site whose CNAME is kandue.app with https_enforced false, so
+    // Pages 301s it to *cleartext* http://kandue.app/. The kandue/ stubs answer
+    // the three shipped paths; this line carries anything deeper.
+    kandue:     "https://kandue.app/",
   };
   var m = location.pathname.match(/^\/([^\/]+)(?:\/(.*))?$/);
   var base = m && MAP[m[1]];
