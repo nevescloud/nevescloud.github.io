@@ -10,7 +10,7 @@ Consolidated 2026-07-23: the apex no longer hosts a showcase — **jonasneves.co
 
 ## Branches — source vs. published
 
-- **`main`** = source of truth; edit here only. Authored files **plus** repo meta (`CLAUDE.md`, `README.md`, `.gitignore`, `deploy.sh`). Not served, so a stray commit never goes live.
+- **`main`** = source of truth; edit here only. Authored files **plus** repo meta (`AGENTS.md`, `README.md`, `.gitignore`, `deploy.sh`). Not served, so a stray commit never goes live.
 - **`gh-pages`** = published output: `main`'s tracked tree minus `deploy.sh`'s `META` list. **Derived, never hand-edited** — so the branches can't drift.
 
 No build step: files served verbatim.

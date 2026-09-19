@@ -10,7 +10,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WT="$ROOT/.worktree/gh-pages"
 
 # meta files that live on `main` only and must not be published
-META=(README.md CLAUDE.md .gitignore deploy.sh)
+META=(README.md AGENTS.md .gitignore deploy.sh)
 
 cd "$ROOT"
 git diff --quiet && git diff --cached --quiet || { echo "main has uncommitted changes — commit first"; exit 1; }
