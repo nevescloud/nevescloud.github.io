@@ -37,7 +37,7 @@
        disappears. Both are deliberate, and the reason there is no outline
        version of this: a stroked cloud lands on half pixels at 16 and renders
        as a grey haze. A sibling project measured the same failure
-       (nevescloud/kandue, store/brand/README.md). Any replacement gets tested
+       (nevescloud/kandue, students/store/brand/README.md). Any replacement gets tested
        at 16 before anything else about it is judged.
 
        Note for whoever edits this comment: no double hyphen may appear anywhere
