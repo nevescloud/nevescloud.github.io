@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!-- A snow cloud (neves is Portuguese for snows): the org site behind neves.cloud. -->
+  <rect x="1" y="1" width="126" height="126" rx="28" fill="#16304f"/>
+  <g fill="#eef4fb"><circle cx="46" cy="60" r="20"/><circle cx="72" cy="50" r="26"/><circle cx="94" cy="66" r="16"/><rect x="26" y="60" width="84" height="22" rx="11"/></g>
+  <g fill="#8fd0ff"><circle cx="44" cy="100" r="7"/><circle cx="64" cy="108" r="7"/><circle cx="84" cy="100" r="7"/></g>
+</svg>
